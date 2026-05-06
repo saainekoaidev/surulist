@@ -1,10 +1,8 @@
-# プロジェクト名 — 作業指示
-
-> このファイルは [claude-workflow-starter](https://github.com/saainekoaidev/claude-workflow-starter) から bootstrap された雛形です。プロジェクト固有の内容に置き換えて運用してください。
+# プロジェクト名 — するリスト
 
 ## プロジェクト概要
 
-(プロジェクトの目的・想定スコープ・対象ユーザを 2-3 行で記述)
+localhostで動くToDoリスト。自分が使えればよい。
 
 ---
 
@@ -52,15 +50,17 @@ User Story (要件 1 件分) の実装が完了したら, 以下の手順で mai
 
 ## 採用ツール (Tier 1)
 
-実装フェーズで確定したら以下を埋める:
-
 | # | ツール | 担う工程 |
 |---|---|---|
 | 1 | VSCode + Claude Code | AI支援開発の中核 |
 | 2 | Git + GitHub | ソース管理 |
 | 3 | GitHub Issues + Projects | バックログ |
-| 4 | (UI ツール) | UI 設計 |
-| 5 | docs/ + docs/adr/ | 設計書 + ADR |
-| 6 | CLAUDE.md + .claude/settings.json | ガードレール |
-| 7 | GitHub Actions | CI/CD |
-| 8 | (テストフレームワーク) | 単体テスト |
+| 4 | React 19 + Vite 6 + TypeScript | フロントエンド |
+| 5 | Hono + Node.js | バックエンド (API サーバ) |
+| 6 | Prisma + SQLite | ORM + データベース |
+| 7 | pnpm (workspace) | パッケージ管理 + モノレポ |
+| 8 | docs/ + docs/adr/ | 設計書 + ADR |
+| 9 | CLAUDE.md + .claude/settings.json | ガードレール |
+| 10 | GitHub Actions | CI/CD |
+| 11 | Vitest | 単体テスト |
+| 12 | Playwright | E2E テスト |

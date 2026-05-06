@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "noEmit": false,
+    "outDir": "dist-node",
+    "declaration": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+}

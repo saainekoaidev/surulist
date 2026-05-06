@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>するリスト — 画面モックアップ (メイン一覧)</title>
+<style>
+  /* ============================================================
+     Design Token — 薄いブルー基調
+     後段の画面モックアップでもこの token を踏襲する
+     ============================================================ */
+  :root {
+    /* palette */
+    --color-primary:       #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-primary-light: #dbeafe;
+    --color-primary-bg:    #eff6ff;
+
+    --color-danger:        #ef4444;
+    --color-danger-hover:  #dc2626;
+
+    --color-bg:            #f0f6ff;
+    --color-surface:       #ffffff;
+    --color-border:        #bfdbfe;
+    --color-border-light:  #e0edff;
+
+    --color-text:          #1e3a5f;
+    --color-text-muted:    #64748b;
+    --color-text-inverse:  #ffffff;
+
+    --color-header-bg:     #3b82f6;
+    --color-header-text:   #ffffff;
+
+    --color-table-header:  #dbeafe;
+    --color-table-stripe:  #f0f6ff;
+    --color-row-hover:     #e8f2ff;
+    --color-editing-bg:    #fef9c3;
+
+    --color-badge-bg:      #bfdbfe;
+    --color-badge-text:    #1e40af;
+
+    --color-overlay:       rgba(30, 58, 95, 0.4);
+
+    /* status chips */
+    --status-not-started-bg:   #e2e8f0;
+    --status-not-started-text: #475569;
+    --status-in-progress-bg:   #dbeafe;
+    --status-in-progress-text: #1d4ed8;
+    --status-pending-bg:       #fef3c7;
+    --status-pending-text:     #92400e;
+    --status-done-bg:          #d1fae5;
+    --status-done-text:        #065f46;
+
+    /* spacing / radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 3px rgba(30,58,95,.08);
+    --shadow-md: 0 4px 16px rgba(30,58,95,.12);
+    --shadow-lg: 0 12px 40px rgba(30,58,95,.18);
+
+    /* typography */
+    --font-sans: "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  }
+
+  /* ============================================================
+     Reset & Base
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ============================================================
+     Layout
+     ============================================================ */
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px 48px;
+  }
+
+  /* ============================================================
+     Header
+     ============================================================ */
+  .header {
+    background: var(--color-header-bg);
+    color: var(--color-header-text);
+    padding: 14px 24px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 24px;
+  }
+
+  /* ============================================================
+     Toolbar (Objective selector + buttons)
+     ============================================================ */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .toolbar select {
+    font-size: 14px;
+    padding: 8px 32px 8px 12px;
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%233b82f6'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 200px;
+  }
+  .toolbar select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s;
+  }
+  .btn-outline {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+  }
+  .btn-outline:hover { background: var(--color-primary-light); }
+  .btn-primary {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+  }
+  .btn-primary:hover { background: var(--color-primary-hover); }
+  .btn-danger {
+    background: var(--color-surface);
+    color: var(--color-danger);
+    border: 1.5px solid var(--color-danger);
+  }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-icon {
+    padding: 5px 8px;
+    font-size: 16px;
+    line-height: 1;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .btn-icon:hover { background: var(--color-primary-light); color: var(--color-danger); }
+
+  .toolbar-spacer { flex: 1; }
+
+  /* ============================================================
+     Section heading with count badge
+     ============================================================ */
+  .section-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .section-bar h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--color-badge-bg);
+    color: var(--color-badge-text);
+  }
+
+  /* ============================================================
+     Table
+     ============================================================ */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--color-table-header);
+    color: var(--color-text);
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--color-border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: middle;
+  }
+  tbody tr:nth-child(even) { background: var(--color-table-stripe); }
+  tbody tr:hover { background: var(--color-row-hover); }
+
+  .col-num     { width: 44px; text-align: center; font-weight: 600; color: var(--color-text-muted); }
+  .col-status  { width: 160px; }
+  .col-todo    { /* flex */ }
+  .col-date    { width: 130px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
+  .col-actions { width: 130px; white-space: nowrap; text-align: right; }
+
+  /* status chip inside select-like span */
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .status-chip::after {
+    content: "▾";
+    font-size: 10px;
+    opacity: .6;
+  }
+  .status-not-started { background: var(--status-not-started-bg); color: var(--status-not-started-text); }
+  .status-in-progress { background: var(--status-in-progress-bg); color: var(--status-in-progress-text); }
+  .status-pending     { background: var(--status-pending-bg);     color: var(--status-pending-text); }
+  .status-done        { background: var(--status-done-bg);        color: var(--status-done-text); }
+
+  /* ============================================================
+     New-row (inline add)
+     ============================================================ */
+  .row-new {
+    background: var(--color-primary-bg) !important;
+  }
+  .row-new td { padding: 8px 12px; }
+  .row-new input[type="text"] {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 14px;
+    border: 1.5px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--color-surface);
+  }
+  .row-new input[type="text"]:focus {
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+  }
+
+  /* ============================================================
+     Editing row
+     ============================================================ */
+  .row-editing {
+    background: var(--color-editing-bg) !important;
+  }
+  .row-editing td { padding: 8px 12px; }
+  .row-editing input[type="text"] {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 14px;
+    border: 1.5px solid #f59e0b;
+    border-radius: var(--radius-sm);
+    outline: none;
+    background: var(--color-surface);
+  }
+
+  /* ============================================================
+     Modal overlay + dialog
+     ============================================================ */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--color-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .dialog {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 480px;
+    max-width: 92vw;
+    padding: 24px;
+  }
+  .dialog h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--color-text);
+  }
+  .dialog-list {
+    list-style: none;
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .dialog-list li {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border-light);
+    gap: 12px;
+  }
+  .dialog-list li:last-child { border-bottom: none; }
+  .dialog-list .obj-name {
+    flex: 1;
+    font-size: 14px;
+  }
+  .dialog-list .obj-name input {
+    width: 100%;
+    font-size: 14px;
+    padding: 5px 8px;
+    border: 1.5px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+  }
+  .dialog-list .obj-count {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    min-width: 32px;
+    text-align: right;
+  }
+  .dialog-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ============================================================
+     Section divider label
+     ============================================================ */
+  .view-label {
+    margin-top: 48px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    border-left: 3px solid var(--color-primary);
+    padding-left: 10px;
+  }
+
+  /* ============================================================
+     Footer (mockup annotation)
+     ============================================================ */
+  .mockup-note {
+    margin-top: 40px;
+    padding: 16px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--color-border);
+    line-height: 1.8;
+  }
+  .mockup-note strong { color: var(--color-text); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     View 1: 通常表示
+     ============================================================ -->
+<div class="app">
+
+  <div class="header">するリスト</div>
+
+  <p class="view-label">View 1 — 通常表示</p>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <select>
+      <option selected>仕事</option>
+      <option>プライベート</option>
+      <option>勉強</option>
+    </select>
+    <button class="btn btn-outline btn-sm">編集</button>
+    <span class="toolbar-spacer"></span>
+    <button class="btn btn-primary btn-sm">＋ 新規追加</button>
+  </div>
+
+  <!-- Todo table -->
+  <div class="section-bar">
+    <h2>Todo 一覧</h2>
+    <span class="badge">2件</span>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-status">Status</th>
+          <th>Todo</th>
+          <th class="col-date">RegistDate</th>
+          <th class="col-date">UpdateDate</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-num">1</td>
+          <td><span class="status-chip status-in-progress">In Progress</span></td>
+          <td>ご飯を食べる</td>
+          <td class="col-date">2026/5/6 12:00</td>
+          <td class="col-date"></td>
+          <td class="col-actions"></td>
+        </tr>
+        <tr>
+          <td class="col-num">2</td>
+          <td><span class="status-chip status-not-started">Not Started</span></td>
+          <td>寝る</td>
+          <td class="col-date">2026/5/6 17:16</td>
+          <td class="col-date"></td>
+          <td class="col-actions"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================
+       View 2: 新規追加行あり
+       ============================================================ -->
+  <p class="view-label">View 2 — 新規追加行 (インライン入力)</p>
+
+  <div class="toolbar">
+    <select>
+      <option selected>仕事</option>
+    </select>
+    <button class="btn btn-outline btn-sm">編集</button>
+    <span class="toolbar-spacer"></span>
+    <button class="btn btn-primary btn-sm" style="opacity:.5" disabled>＋ 新規追加</button>
+  </div>
+
+  <div class="section-bar">
+    <h2>Todo 一覧</h2>
+    <span class="badge">2件</span>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-status">Status</th>
+          <th>Todo</th>
+          <th class="col-date">RegistDate</th>
+          <th class="col-date">UpdateDate</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-new">
+          <td class="col-num" style="color:var(--color-primary);">-</td>
+          <td></td>
+          <td><input type="text" placeholder="Todoを入力 (全角40文字まで)" maxlength="40"></td>
+          <td class="col-date"></td>
+          <td class="col-date"></td>
+          <td class="col-actions"><button class="btn btn-primary btn-sm">登録</button></td>
+        </tr>
+        <tr>
+          <td class="col-num">1</td>
+          <td><span class="status-chip status-in-progress">In Progress</span></td>
+          <td>ご飯を食べる</td>
+          <td class="col-date">2026/5/6 12:00</td>
+          <td class="col-date"></td>
+          <td class="col-actions"></td>
+        </tr>
+        <tr>
+          <td class="col-num">2</td>
+          <td><span class="status-chip status-not-started">Not Started</span></td>
+          <td>寝る</td>
+          <td class="col-date">2026/5/6 17:16</td>
+          <td class="col-date"></td>
+          <td class="col-actions"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================
+       View 3: 編集モード行
+       ============================================================ -->
+  <p class="view-label">View 3 — 編集モード (行選択時)</p>
+
+  <div class="toolbar">
+    <select>
+      <option selected>仕事</option>
+    </select>
+    <button class="btn btn-outline btn-sm">編集</button>
+    <span class="toolbar-spacer"></span>
+    <button class="btn btn-primary btn-sm">＋ 新規追加</button>
+  </div>
+
+  <div class="section-bar">
+    <h2>Todo 一覧</h2>
+    <span class="badge">2件</span>
+  </div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th class="col-status">Status</th>
+          <th>Todo</th>
+          <th class="col-date">RegistDate</th>
+          <th class="col-date">UpdateDate</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-editing">
+          <td class="col-num">1</td>
+          <td><span class="status-chip status-in-progress">In Progress</span></td>
+          <td><input type="text" value="ご飯を食べる"></td>
+          <td class="col-date">2026/5/6 12:00</td>
+          <td class="col-date"></td>
+          <td class="col-actions">
+            <button class="btn btn-primary btn-sm">更新</button>
+            <button class="btn btn-danger btn-sm" style="margin-left:4px;">削除</button>
+          </td>
+        </tr>
+        <tr>
+          <td class="col-num">2</td>
+          <td><span class="status-chip status-not-started">Not Started</span></td>
+          <td>寝る</td>
+          <td class="col-date">2026/5/6 17:16</td>
+          <td class="col-date"></td>
+          <td class="col-actions"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================
+       View 4: ステータス全種の表示サンプル
+       ============================================================ -->
+  <p class="view-label">View 4 — ステータスチップ 全種</p>
+
+  <div class="card" style="padding:20px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+    <span class="status-chip status-not-started">Not Started</span>
+    <span class="status-chip status-in-progress">In Progress</span>
+    <span class="status-chip status-pending">Pending</span>
+    <span class="status-chip status-done">Done</span>
+  </div>
+
+  <!-- ============================================================
+       View 5: 目的編集ダイアログ (inline mock)
+       ============================================================ -->
+  <p class="view-label">View 5 — 目的編集ダイアログ (モーダル)</p>
+
+  <div style="position:relative; height:370px; border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--color-border);">
+    <!-- dimmed background -->
+    <div style="position:absolute; inset:0; background:var(--color-overlay);"></div>
+    <!-- dialog -->
+    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;">
+      <div class="dialog" style="position:relative;">
+        <h3>目的の管理</h3>
+        <ul class="dialog-list">
+          <li>
+            <span class="obj-name">仕事</span>
+            <span class="obj-count">2件</span>
+            <button class="btn-icon" title="削除">✕</button>
+          </li>
+          <li>
+            <span class="obj-name">プライベート</span>
+            <span class="obj-count">5件</span>
+            <button class="btn-icon" title="削除">✕</button>
+          </li>
+          <li>
+            <span class="obj-name"><input type="text" value="勉強" /></span>
+            <span class="obj-count">0件</span>
+            <button class="btn-icon" title="削除">✕</button>
+          </li>
+        </ul>
+        <div class="dialog-footer">
+          <button class="btn btn-outline btn-sm">＋ 追加</button>
+          <button class="btn btn-primary btn-sm">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Mockup annotation
+       ============================================================ -->
+  <div class="mockup-note">
+    <strong>デザインリファレンスノート</strong><br>
+    ・本ファイルは <code>docs/ui-screens/screen_design.md</code> に基づく静的モックアップです。<br>
+    ・配色は <code>:root</code> の CSS Custom Properties (Design Token) で一元管理しています。<br>
+    ・後段の画面モックアップは同じ token + 命名規則 (<code>docs/ui-images/&lt;screen-name&gt;.html</code>) で生成してください。<br>
+    ・各 View は画面の状態遷移 (通常 → 新規追加 → 編集モード → ダイアログ) を示しています。
+  </div>
+
+</div>
+</body>
+</html>

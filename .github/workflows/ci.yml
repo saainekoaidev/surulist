@@ -1,8 +1,5 @@
 name: CI
 
-# 雛形 CI workflow。stack 確定後に install / build / test / e2e ステップを埋める。
-# 詳細は WG05 の参考実装を参照: https://github.com/saainekoaidev/wg05-sandbox/blob/main/.github/workflows/ci.yml
-
 on:
   push:
   pull_request:
@@ -24,26 +21,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # TODO: スタックに応じて以下を埋める。
-      # 例 (Node.js + pnpm):
-      # - name: Setup pnpm
-      #   uses: pnpm/action-setup@v4
-      #   with:
-      #     version: 10
-      # - name: Setup Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version-file: .nvmrc
-      #     cache: pnpm
-      # - name: Install dependencies
-      #   run: pnpm install --frozen-lockfile
-      # - name: Build
-      #   run: pnpm -r build
-      # - name: Unit tests
-      #   run: pnpm -r test
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Placeholder (replace this with stack-specific steps)
-        run: |
-          echo "CI workflow not yet configured."
-          echo "See README.md and replace TODO blocks in .github/workflows/ci.yml"
-          exit 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter backend exec prisma generate
+
+      - name: Build
+        run: pnpm -r build
+
+      - name: Unit tests
+        run: pnpm -r test
+
+      - name: Install Playwright browsers
+        run: pnpm --filter frontend exec playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: pnpm --filter frontend test:e2e
+        env:
+          DATABASE_URL: "file:./test.db"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14
