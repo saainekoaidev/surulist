@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+dist-node/
 build/
 out/
 
@@ -42,3 +43,7 @@ coverage/
 playwright-report/
 test-results/
 /playwright/.cache/
+
+# SQLite
+*.db
+*.db-journal
