@@ -598,9 +598,9 @@ test.describe("Sort feature (US-019)", () => {
     // Switch to deadline sort
     await page.locator(".sort-select").selectOption("deadline");
 
-    // Deadline DESC: 遅い期限, 早い期限, 期限なし (null last)
-    await expect(todoTexts.nth(0)).toHaveText("遅い期限");
-    await expect(todoTexts.nth(1)).toHaveText("早い期限");
+    // Deadline ASC: 早い期限, 遅い期限, 期限なし (null last)
+    await expect(todoTexts.nth(0)).toHaveText("早い期限");
+    await expect(todoTexts.nth(1)).toHaveText("遅い期限");
     await expect(todoTexts.nth(2)).toHaveText("期限なし");
   });
 

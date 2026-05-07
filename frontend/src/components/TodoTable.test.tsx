@@ -511,7 +511,7 @@ describe("TodoTable - sort feature (US-019)", () => {
     expect(todoTexts).toEqual(["最初に追加", "後から追加"]);
   });
 
-  it("sorts by deadline DESC with null at end", () => {
+  it("sorts by deadline ASC with null at end", () => {
     const sortTodos: Todo[] = [
       { id: 1, text: "期限なし", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
       { id: 2, text: "早い期限", status: "Not Started", categoryId: 1, deadline: "2026-06-01T00:00:00Z", createdAt: "2026-05-02T00:00:00Z", updatedAt: "2026-05-02T00:00:00Z" },
@@ -519,7 +519,7 @@ describe("TodoTable - sort feature (US-019)", () => {
     ];
     const { container } = render(<TodoTable {...defaultProps} todos={sortTodos} sortKey="deadline" />);
     const todoTexts = Array.from(container.querySelectorAll(".todo-text-clickable")).map(el => el.textContent);
-    expect(todoTexts).toEqual(["遅い期限", "早い期限", "期限なし"]);
+    expect(todoTexts).toEqual(["早い期限", "遅い期限", "期限なし"]);
   });
 
   it("uses id as tiebreaker for deadline sort", () => {
@@ -530,7 +530,7 @@ describe("TodoTable - sort feature (US-019)", () => {
     ];
     const { container } = render(<TodoTable {...defaultProps} todos={sameDeadlineTodos} sortKey="deadline" />);
     const todoTexts = Array.from(container.querySelectorAll(".todo-text-clickable")).map(el => el.textContent);
-    // deadline DESC, id DESC → ID3, ID2, ID1
-    expect(todoTexts).toEqual(["ID3", "ID2", "ID1"]);
+    // deadline ASC, id ASC → ID1, ID2, ID3
+    expect(todoTexts).toEqual(["ID1", "ID2", "ID3"]);
   });
 });

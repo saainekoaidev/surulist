@@ -205,11 +205,11 @@ function sortTodos(todos: (Todo | TodoWithCategory)[], key: SortKey): (Todo | To
     });
   } else {
     sorted.sort((a, b) => {
-      if (!a.deadline && !b.deadline) return b.id - a.id;
+      if (!a.deadline && !b.deadline) return a.id - b.id;
       if (!a.deadline) return 1;
       if (!b.deadline) return -1;
-      const cmp = new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
-      return cmp !== 0 ? cmp : b.id - a.id;
+      const cmp = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+      return cmp !== 0 ? cmp : a.id - b.id;
     });
   }
   return sorted;
