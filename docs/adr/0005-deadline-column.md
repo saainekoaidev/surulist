@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — 入力方式 (即時 PUT / datetime-local) は [0010-deadline-deferred-commit.md](0010-deadline-deferred-commit.md) により Superseded
 
 ## Context
 

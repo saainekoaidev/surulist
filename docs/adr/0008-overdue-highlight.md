@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — `!!` 表示位置は [0009-overdue-mark-column.md](0009-overdue-mark-column.md) により Superseded
 
 ## Context
 

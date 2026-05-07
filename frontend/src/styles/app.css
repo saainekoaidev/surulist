@@ -247,12 +247,15 @@ tbody tr:hover { background: var(--color-row-hover); }
 
 .col-num      { width: 44px; text-align: center; font-weight: 600; color: var(--color-text-muted); }
 .col-status   { width: 160px; }
-.col-deadline { width: 170px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
+.col-overdue  { width: 28px; text-align: center; padding-left: 0 !important; padding-right: 0 !important; }
+.col-date-input { width: 130px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
+.col-time-input { width: 90px; font-size: 13px; color: var(--color-text-muted); white-space: nowrap; }
 .col-date     { width: 110px; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; }
 .col-actions  { width: 130px; white-space: nowrap; text-align: right; }
 
-/* Deadline ヘッダも 13px 階層に合わせる */
-thead th.col-deadline { font-size: 11px; }
+/* Date/Time ヘッダも 13px 階層に合わせる */
+thead th.col-date-input { font-size: 11px; }
+thead th.col-time-input { font-size: 11px; }
 /* RegistDate / UpdateDate ヘッダは更に小さく */
 thead th.col-date { font-size: 10px; }
 

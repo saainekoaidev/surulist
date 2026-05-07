@@ -95,63 +95,103 @@ describe("TodoTable", () => {
   });
 });
 
-describe("TodoTable - deadline column (US-008)", () => {
-  it("renders Deadline column header", () => {
+describe("TodoTable - deadline columns (US-008, US-013)", () => {
+  it("renders Date and Time column headers", () => {
     render(<TodoTable {...defaultProps} />);
-    expect(screen.getByText("Deadline")).toBeInTheDocument();
+    expect(screen.getByText("Date")).toBeInTheDocument();
+    expect(screen.getByText("Time")).toBeInTheDocument();
   });
 
-  it("renders datetime-local input for each todo", () => {
+  it("renders date and time inputs for each todo", () => {
     const { container } = render(<TodoTable {...defaultProps} />);
-    const deadlineInputs = container.querySelectorAll('input[type="datetime-local"]');
-    expect(deadlineInputs).toHaveLength(2);
+    const dateInputs = container.querySelectorAll('input[type="date"]');
+    const timeInputs = container.querySelectorAll('input[type="time"]');
+    expect(dateInputs).toHaveLength(2);
+    expect(timeInputs).toHaveLength(2);
   });
 
-  it("shows formatted deadline value when set", () => {
+  it("shows date and time values when deadline is set", () => {
     const { container } = render(<TodoTable {...defaultProps} />);
-    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const timeInputs = container.querySelectorAll<HTMLInputElement>('input[type="time"]');
     // First todo has no deadline
-    expect(deadlineInputs[0].value).toBe("");
+    expect(dateInputs[0].value).toBe("");
+    expect(timeInputs[0].value).toBe("");
     // Second todo has deadline 2026-06-15T14:30:00Z — displayed in local time
-    expect(deadlineInputs[1].value).not.toBe("");
+    expect(dateInputs[1].value).not.toBe("");
+    expect(timeInputs[1].value).not.toBe("");
   });
 
-  it("calls onUpdate with deadline when datetime is changed", async () => {
+  it("calls onUpdate with deadline on date blur (deferred commit)", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
 
-    // Simulate changing the first todo's deadline
-    await userEvent.clear(deadlineInputs[0]);
-    // fireEvent is more reliable for datetime-local inputs
     const { fireEvent } = await import("@testing-library/react");
-    fireEvent.change(deadlineInputs[0], { target: { value: "2026-07-01T10:00" } });
-
-    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T10:00" });
+    fireEvent.change(dateInputs[0], { target: { value: "2026-07-01" } });
+    // onUpdate should NOT be called yet (deferred)
+    expect(onUpdate).not.toHaveBeenCalled();
+    // Trigger blur to commit
+    fireEvent.blur(dateInputs[0]);
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T00:00" });
   });
 
-  it("calls onUpdate with null when deadline is cleared", async () => {
+  it("calls onUpdate with deadline on Enter key", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
 
-    // Clear the second todo's deadline (which has a value)
     const { fireEvent } = await import("@testing-library/react");
-    fireEvent.change(deadlineInputs[1], { target: { value: "" } });
+    fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+    fireEvent.keyDown(dateInputs[0], { key: "Enter" });
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-08-01T00:00" });
+  });
 
+  it("calls onUpdate with null when date is cleared", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+
+    // Clear the second todo's date (which has a value)
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInputs[1], { target: { value: "" } });
+    fireEvent.blur(dateInputs[1]);
     expect(onUpdate).toHaveBeenCalledWith(2, { deadline: null });
+  });
+
+  it("combines date and time when both are set", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const timeInputs = container.querySelectorAll<HTMLInputElement>('input[type="time"]');
+
+    const { fireEvent } = await import("@testing-library/react");
+    // Set date first
+    fireEvent.change(dateInputs[0], { target: { value: "2026-07-01" } });
+    fireEvent.blur(dateInputs[0]);
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T00:00" });
+
+    onUpdate.mockClear();
+    // Now set time
+    fireEvent.change(timeInputs[0], { target: { value: "15:30" } });
+    fireEvent.blur(timeInputs[0]);
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T15:30" });
   });
 });
 
-describe("TodoTable - overdue highlighting (US-011)", () => {
-  it("shows overdue styling when deadline is past and status is not Done", () => {
+describe("TodoTable - overdue highlighting (US-011, US-012)", () => {
+  it("shows overdue styling and !! in dedicated column when deadline is past", () => {
     const overdueTodos: Todo[] = [
       { id: 1, text: "超過タスク", status: "Not Started", categoryId: 1, deadline: "2020-01-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
     ];
     const { container } = render(<TodoTable {...defaultProps} todos={overdueTodos} />);
     const row = container.querySelector("tbody tr");
     expect(row).toHaveClass("row-overdue");
+    // !! mark is in the dedicated overdue column, not replacing #
     expect(container.querySelector(".overdue-mark")).toHaveTextContent("!!");
+    // Row number is still shown
+    const numCells = container.querySelectorAll(".col-num");
+    expect(numCells[1]).toHaveTextContent("1");
   });
 
   it("does not show overdue styling when status is Done", () => {
@@ -184,12 +224,20 @@ describe("TodoTable - overdue highlighting (US-011)", () => {
     expect(container.querySelector(".overdue-mark")).toBeNull();
   });
 
-  it("shows row number instead of !! for non-overdue todos", () => {
-    const { container } = render(<TodoTable {...defaultProps} />);
+  it("always shows row numbers even for overdue todos (US-012)", () => {
+    const mixedTodos: Todo[] = [
+      { id: 1, text: "超過", status: "Not Started", categoryId: 1, deadline: "2020-01-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+      { id: 2, text: "通常", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={mixedTodos} />);
     const numCells = container.querySelectorAll(".col-num");
     // Skip thead th
     expect(numCells[1]).toHaveTextContent("1");
     expect(numCells[2]).toHaveTextContent("2");
+    // Overdue column has !! only for first todo
+    const overdueCells = container.querySelectorAll("td.col-overdue");
+    expect(overdueCells[0].querySelector(".overdue-mark")).toHaveTextContent("!!");
+    expect(overdueCells[1].querySelector(".overdue-mark")).toBeNull();
   });
 });
 
