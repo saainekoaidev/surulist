@@ -35,20 +35,74 @@ function buildDeadline(date: string, time: string): string | null {
   return time ? `${date}T${time}` : `${date}T00:00`;
 }
 
+/** Parse date input: "20260507" | "2026/05/07" | "2026-5-7" → "2026-05-07", or null */
+function parseDateInput(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  let year: number, month: number, day: number;
+
+  const sepMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (sepMatch) {
+    year = parseInt(sepMatch[1], 10);
+    month = parseInt(sepMatch[2], 10);
+    day = parseInt(sepMatch[3], 10);
+  } else {
+    const pureMatch = trimmed.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (!pureMatch) return null;
+    year = parseInt(pureMatch[1], 10);
+    month = parseInt(pureMatch[2], 10);
+    day = parseInt(pureMatch[3], 10);
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const d = new Date(year, month - 1, day);
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Parse time input: "1234" | "930" | "12:34" | "9:30" → "12:34" | "09:30", or null */
+function parseTimeInput(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  let hour: number, min: number;
+
+  const colonMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (colonMatch) {
+    hour = parseInt(colonMatch[1], 10);
+    min = parseInt(colonMatch[2], 10);
+  } else {
+    const pureMatch = trimmed.match(/^(\d{1,2})(\d{2})$/);
+    if (!pureMatch) return null;
+    hour = parseInt(pureMatch[1], 10);
+    min = parseInt(pureMatch[2], 10);
+  }
+
+  if (hour > 23 || min > 59) return null;
+
+  return `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
 function DeadlineCell({ todoId, deadline, onUpdate }: {
   todoId: number;
   deadline: string | null;
   onUpdate: (id: number, data: { deadline: string | null }) => Promise<void>;
 }) {
   const server = toDateAndTime(deadline);
-  const [localDate, setLocalDate] = useState(server.date);
-  const [localTime, setLocalTime] = useState(server.time);
+  const [dateText, setDateText] = useState(server.date ? server.date.replace(/-/g, "/") : "");
+  const [timeText, setTimeText] = useState(server.time);
 
-  // Display: "yyyy-mm-dd" → "yyyy/mm/dd"
-  const displayDate = localDate.replace(/-/g, "/");
+  const commit = () => {
+    const parsedDate = parseDateInput(dateText);
+    const parsedTime = parseTimeInput(timeText);
 
-  const commitDate = (date: string, time: string) => {
-    const newVal = buildDeadline(date, time);
+    // Normalize display: valid → formatted, invalid → cleared
+    setDateText(parsedDate ? parsedDate.replace(/-/g, "/") : "");
+    setTimeText(parsedTime ?? "");
+
+    const newVal = parsedDate ? buildDeadline(parsedDate, parsedTime ?? "") : null;
     const origVal = buildDeadline(server.date, server.time);
     if (newVal !== origVal) {
       onUpdate(todoId, { deadline: newVal });
@@ -61,10 +115,10 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
         <input
           type="text"
           className="deadline-input"
-          value={displayDate}
-          onChange={(e) => setLocalDate(e.target.value.replace(/\//g, "-"))}
-          onBlur={() => commitDate(localDate, localTime)}
-          onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+          value={dateText}
+          onChange={(e) => setDateText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
           placeholder="yyyy/mm/dd"
           maxLength={10}
         />
@@ -73,10 +127,10 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
         <input
           type="text"
           className="deadline-input"
-          value={localTime}
-          onChange={(e) => setLocalTime(e.target.value)}
-          onBlur={() => commitDate(localDate, localTime)}
-          onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+          value={timeText}
+          onChange={(e) => setTimeText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
           placeholder="hh:mm"
           maxLength={5}
         />
