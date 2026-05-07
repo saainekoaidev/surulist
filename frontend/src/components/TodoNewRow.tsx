@@ -7,11 +7,17 @@ interface Props {
 
 export function TodoNewRow({ onSubmit, onCancel }: Props) {
   const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!text.trim()) return;
-    await onSubmit(text.trim());
-    setText("");
+    if (!text.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit(text.trim());
+      setText("");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -40,7 +46,7 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
       <td className="col-date" />
       <td className="col-date" />
       <td className="col-actions">
-        <button className="btn btn-primary btn-sm" onClick={handleSubmit}>
+        <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting}>
           登録
         </button>
       </td>
