@@ -143,6 +143,56 @@ describe("TodoTable - deadline column (US-008)", () => {
   });
 });
 
+describe("TodoTable - overdue highlighting (US-011)", () => {
+  it("shows overdue styling when deadline is past and status is not Done", () => {
+    const overdueTodos: Todo[] = [
+      { id: 1, text: "超過タスク", status: "Not Started", categoryId: 1, deadline: "2020-01-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={overdueTodos} />);
+    const row = container.querySelector("tbody tr");
+    expect(row).toHaveClass("row-overdue");
+    expect(container.querySelector(".overdue-mark")).toHaveTextContent("!!");
+  });
+
+  it("does not show overdue styling when status is Done", () => {
+    const doneTodos: Todo[] = [
+      { id: 1, text: "完了タスク", status: "Done", categoryId: 1, deadline: "2020-01-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={doneTodos} />);
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toHaveClass("row-overdue");
+    expect(container.querySelector(".overdue-mark")).toBeNull();
+  });
+
+  it("does not show overdue styling when deadline is null", () => {
+    const noDeadlineTodos: Todo[] = [
+      { id: 1, text: "期限なし", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={noDeadlineTodos} />);
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toHaveClass("row-overdue");
+    expect(container.querySelector(".overdue-mark")).toBeNull();
+  });
+
+  it("does not show overdue styling when deadline is in the future", () => {
+    const futureTodos: Todo[] = [
+      { id: 1, text: "未来タスク", status: "In Progress", categoryId: 1, deadline: "2099-12-31T23:59:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={futureTodos} />);
+    const row = container.querySelector("tbody tr");
+    expect(row).not.toHaveClass("row-overdue");
+    expect(container.querySelector(".overdue-mark")).toBeNull();
+  });
+
+  it("shows row number instead of !! for non-overdue todos", () => {
+    const { container } = render(<TodoTable {...defaultProps} />);
+    const numCells = container.querySelectorAll(".col-num");
+    // Skip thead th
+    expect(numCells[1]).toHaveTextContent("1");
+    expect(numCells[2]).toHaveTextContent("2");
+  });
+});
+
 describe("TodoTable - all mode grouping (US-007)", () => {
   const groupedTodos: TodoWithCategory[] = [
     { id: 1, text: "仕事タスク", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },

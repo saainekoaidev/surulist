@@ -304,6 +304,64 @@ test.describe("Deadline column (US-008)", () => {
   });
 });
 
+test.describe("Overdue highlighting (US-011)", () => {
+  let categoryId: number;
+
+  test.beforeEach(async ({ page }) => {
+    await cleanupAll(page);
+    const res = await page.request.post(`${API}/categories`, { data: { name: "超過テスト" } });
+    const cat = await res.json();
+    categoryId = cat.id;
+    await page.goto("/");
+    await clearLocalStorage(page);
+    await page.reload();
+    await expect(page.locator(".toolbar select")).toHaveValue(String(categoryId));
+  });
+
+  test.afterEach(async ({ page }) => {
+    await cleanupAll(page);
+  });
+
+  test("overdue todo shows !! mark and red background", async ({ page }) => {
+    // Create a todo with a past deadline
+    await page.request.post(`${API}/todos`, {
+      data: { text: "超過タスク", categoryId, deadline: "2020-01-01T00:00:00Z" },
+    });
+    await page.reload();
+
+    const row = page.locator("tbody tr").first();
+    await expect(row).toHaveClass(/row-overdue/);
+    await expect(row.locator(".overdue-mark")).toHaveText("!!");
+  });
+
+  test("Done todo does not show overdue styling even with past deadline", async ({ page }) => {
+    await page.request.post(`${API}/todos`, {
+      data: { text: "完了タスク", categoryId, deadline: "2020-01-01T00:00:00Z" },
+    });
+    await page.reload();
+
+    // Change status to Done
+    const statusSelect = page.locator(".status-select");
+    await statusSelect.selectOption("Done");
+    await page.reload();
+
+    const row = page.locator("tbody tr").first();
+    await expect(row).not.toHaveClass(/row-overdue/);
+    await expect(row.locator(".overdue-mark")).toHaveCount(0);
+  });
+
+  test("todo without deadline does not show overdue styling", async ({ page }) => {
+    await page.request.post(`${API}/todos`, {
+      data: { text: "期限なしタスク", categoryId },
+    });
+    await page.reload();
+
+    const row = page.locator("tbody tr").first();
+    await expect(row).not.toHaveClass(/row-overdue/);
+    await expect(row.locator(".overdue-mark")).toHaveCount(0);
+  });
+});
+
 test.describe("Show all mode (US-007)", () => {
   let cat1Id: number;
   let cat2Id: number;

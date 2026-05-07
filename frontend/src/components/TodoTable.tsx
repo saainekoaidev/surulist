@@ -35,6 +35,11 @@ interface TodoGroup {
   todos: (Todo | TodoWithCategory)[];
 }
 
+function isOverdue(deadline: string | null, status: string): boolean {
+  if (!deadline || status === "Done") return false;
+  return new Date(deadline) < new Date();
+}
+
 function groupTodos(todos: (Todo | TodoWithCategory)[], isAllMode: boolean): TodoGroup[] {
   if (!isAllMode) {
     return [{ categoryId: 0, categoryName: "", todos }];
@@ -123,9 +128,14 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                 )}
                 {group.todos.map((todo, i) => {
                   const isEditing = editingId === todo.id;
+                  const overdue = isOverdue(todo.deadline, todo.status);
                   return (
-                    <tr key={todo.id} className={isEditing ? "row-editing" : ""}>
-                      <td className="col-num">{i + 1}</td>
+                    <tr key={todo.id} className={isEditing ? "row-editing" : overdue ? "row-overdue" : ""}>
+                      <td className="col-num">
+                        {overdue
+                          ? <span className="overdue-mark">!!</span>
+                          : i + 1}
+                      </td>
                       <td className="col-status">
                         <select
                           className="status-select"
