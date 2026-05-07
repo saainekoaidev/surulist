@@ -237,7 +237,7 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
   });
 });
 
-test.describe("Deadline column (US-008)", () => {
+test.describe("Deadline columns (US-008, US-013)", () => {
   let categoryId: number;
 
   test.beforeEach(async ({ page }) => {
@@ -255,56 +255,73 @@ test.describe("Deadline column (US-008)", () => {
     await cleanupAll(page);
   });
 
-  test("Deadline column header is visible", async ({ page }) => {
-    await expect(page.locator("thead th", { hasText: "Deadline" })).toBeVisible();
+  test("Date and Time column headers are visible", async ({ page }) => {
+    await expect(page.getByRole("columnheader", { name: "Date", exact: true })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Time", exact: true })).toBeVisible();
   });
 
-  test("can set a deadline on a todo", async ({ page }) => {
+  test("can set a deadline date on a todo", async ({ page }) => {
     await page.request.post(`${API}/todos`, { data: { text: "期限設定", categoryId } });
     await page.reload();
 
-    const deadlineInput = page.locator('.deadline-input');
-    await deadlineInput.fill("2026-07-01T10:00");
+    const dateInput = page.locator('input[type="date"]');
+    await dateInput.fill("2026-07-01");
+    // Wait for the PUT triggered by blur to complete
+    const putResp = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await dateInput.blur();
+    await putResp;
 
-    // Reload and verify the deadline persisted
+    // Reload and verify the date persisted
     await page.reload();
-    const input = page.locator('.deadline-input');
-    await expect(input).toHaveValue("2026-07-01T10:00");
+    await expect(page.locator('input[type="date"]')).toHaveValue("2026-07-01");
   });
 
-  test("can change an existing deadline", async ({ page }) => {
-    await page.request.post(`${API}/todos`, {
-      data: { text: "期限変更", categoryId, deadline: "2026-07-01T10:00:00Z" },
-    });
+  test("can set date and time together", async ({ page }) => {
+    await page.request.post(`${API}/todos`, { data: { text: "日時設定", categoryId } });
     await page.reload();
 
-    const deadlineInput = page.locator('.deadline-input');
-    await expect(deadlineInput).not.toHaveValue("");
+    const dateInput = page.locator('input[type="date"]');
+    const timeInput = page.locator('input[type="time"]');
 
-    await deadlineInput.fill("2026-08-15T14:30");
+    // Set date and wait for PUT to complete
+    await dateInput.fill("2026-07-01");
+    const datePut = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await dateInput.blur();
+    await datePut;
 
+    // Set time and wait for PUT to complete
+    await timeInput.fill("14:30");
+    const timePut = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await timeInput.blur();
+    await timePut;
+
+    // Reload and verify both persisted
     await page.reload();
-    await expect(page.locator('.deadline-input')).toHaveValue("2026-08-15T14:30");
+    await expect(page.locator('input[type="date"]')).toHaveValue("2026-07-01");
+    await expect(page.locator('input[type="time"]')).toHaveValue("14:30");
   });
 
-  test("can clear a deadline", async ({ page }) => {
+  test("can clear a deadline by clearing date", async ({ page }) => {
     await page.request.post(`${API}/todos`, {
       data: { text: "期限クリア", categoryId, deadline: "2026-07-01T10:00:00Z" },
     });
     await page.reload();
 
-    const deadlineInput = page.locator('.deadline-input');
-    await expect(deadlineInput).not.toHaveValue("");
+    const dateInput = page.locator('input[type="date"]');
+    await expect(dateInput).not.toHaveValue("");
 
-    // Clear the input
-    await deadlineInput.fill("");
+    // Clear the date input and wait for PUT
+    await dateInput.fill("");
+    const putResp = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await dateInput.blur();
+    await putResp;
 
     await page.reload();
-    await expect(page.locator('.deadline-input')).toHaveValue("");
+    await expect(page.locator('input[type="date"]')).toHaveValue("");
   });
 });
 
-test.describe("Overdue highlighting (US-011)", () => {
+test.describe("Overdue highlighting (US-011, US-012)", () => {
   let categoryId: number;
 
   test.beforeEach(async ({ page }) => {
@@ -322,8 +339,7 @@ test.describe("Overdue highlighting (US-011)", () => {
     await cleanupAll(page);
   });
 
-  test("overdue todo shows !! mark and red background", async ({ page }) => {
-    // Create a todo with a past deadline
+  test("overdue todo shows !! in dedicated column and row number is preserved", async ({ page }) => {
     await page.request.post(`${API}/todos`, {
       data: { text: "超過タスク", categoryId, deadline: "2020-01-01T00:00:00Z" },
     });
@@ -331,7 +347,10 @@ test.describe("Overdue highlighting (US-011)", () => {
 
     const row = page.locator("tbody tr").first();
     await expect(row).toHaveClass(/row-overdue/);
-    await expect(row.locator(".overdue-mark")).toHaveText("!!");
+    // !! mark is in the dedicated overdue column
+    await expect(row.locator(".col-overdue .overdue-mark")).toHaveText("!!");
+    // Row number is still shown (not replaced)
+    await expect(row.locator(".col-num")).toHaveText("1");
   });
 
   test("Done todo does not show overdue styling even with past deadline", async ({ page }) => {
@@ -340,7 +359,6 @@ test.describe("Overdue highlighting (US-011)", () => {
     });
     await page.reload();
 
-    // Change status to Done
     const statusSelect = page.locator(".status-select");
     await statusSelect.selectOption("Done");
     await page.reload();

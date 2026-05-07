@@ -18,15 +18,63 @@ function formatDate(iso: string): string {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function toDatetimeLocalValue(iso: string | null): string {
-  if (!iso) return "";
+function toDateAndTime(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
   const d = new Date(iso);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const min = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${min}` };
+}
+
+function buildDeadline(date: string, time: string): string | null {
+  if (!date) return null;
+  return time ? `${date}T${time}` : `${date}T00:00`;
+}
+
+function DeadlineCell({ todoId, deadline, onUpdate }: {
+  todoId: number;
+  deadline: string | null;
+  onUpdate: (id: number, data: { deadline: string | null }) => Promise<void>;
+}) {
+  const server = toDateAndTime(deadline);
+  const [localDate, setLocalDate] = useState(server.date);
+  const [localTime, setLocalTime] = useState(server.time);
+
+  const commitDate = (date: string, time: string) => {
+    const newVal = buildDeadline(date, time);
+    const origVal = buildDeadline(server.date, server.time);
+    if (newVal !== origVal) {
+      onUpdate(todoId, { deadline: newVal });
+    }
+  };
+
+  return (
+    <>
+      <td className="col-date-input">
+        <input
+          type="date"
+          className="deadline-input"
+          value={localDate}
+          onChange={(e) => setLocalDate(e.target.value)}
+          onBlur={() => commitDate(localDate, localTime)}
+          onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+        />
+      </td>
+      <td className="col-time-input">
+        <input
+          type="time"
+          className="deadline-input"
+          value={localTime}
+          onChange={(e) => setLocalTime(e.target.value)}
+          onBlur={() => commitDate(localDate, localTime)}
+          onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+        />
+      </td>
+    </>
+  );
 }
 
 interface TodoGroup {
@@ -81,10 +129,6 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
     await onUpdate(id, { status });
   };
 
-  const handleDeadlineChange = async (id: number, value: string) => {
-    await onUpdate(id, { deadline: value || null });
-  };
-
   const groups = groupTodos(todos, isAllMode);
 
   return (
@@ -99,8 +143,10 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
             <tr>
               <th className="col-num">#</th>
               <th className="col-status">Status</th>
+              <th className="col-overdue" />
               <th>Todo</th>
-              <th className="col-deadline">Deadline</th>
+              <th className="col-date-input">Date</th>
+              <th className="col-time-input">Time</th>
               <th className="col-date">RegistDate</th>
               <th className="col-date">UpdateDate</th>
               <th className="col-actions" />
@@ -110,7 +156,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
             {isAdding && <TodoNewRow onSubmit={onAdd} onCancel={onCancelAdd} />}
             {todos.length === 0 && !isAdding && (
               <tr>
-                <td colSpan={7} className="empty-state">
+                <td colSpan={9} className="empty-state">
                   {isAllMode
                     ? "Todo がありません。"
                     : "Todo がありません。「+ 新規追加」で追加してください。"}
@@ -121,7 +167,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
               <Fragment key={group.categoryId || "single"}>
                 {isAllMode && (
                   <tr className="group-header-row">
-                    <td colSpan={7} className="group-header">
+                    <td colSpan={9} className="group-header">
                       {group.categoryName}
                     </td>
                   </tr>
@@ -131,11 +177,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                   const overdue = isOverdue(todo.deadline, todo.status);
                   return (
                     <tr key={todo.id} className={isEditing ? "row-editing" : overdue ? "row-overdue" : ""}>
-                      <td className="col-num">
-                        {overdue
-                          ? <span className="overdue-mark">!!</span>
-                          : i + 1}
-                      </td>
+                      <td className="col-num">{i + 1}</td>
                       <td className="col-status">
                         <select
                           className="status-select"
@@ -147,6 +189,9 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                      </td>
+                      <td className="col-overdue">
+                        {overdue && <span className="overdue-mark">!!</span>}
                       </td>
                       <td>
                         {isEditing ? (
@@ -170,14 +215,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                           </span>
                         )}
                       </td>
-                      <td className="col-deadline">
-                        <input
-                          type="datetime-local"
-                          className="deadline-input"
-                          value={toDatetimeLocalValue(todo.deadline)}
-                          onChange={(e) => handleDeadlineChange(todo.id, e.target.value)}
-                        />
-                      </td>
+                      <DeadlineCell todoId={todo.id} deadline={todo.deadline} onUpdate={onUpdate} />
                       <td className="col-date">{formatDate(todo.createdAt)}</td>
                       <td className="col-date">
                         {todo.updatedAt !== todo.createdAt ? formatDate(todo.updatedAt) : ""}

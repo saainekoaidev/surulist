@@ -20,6 +20,7 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
         -
       </td>
       <td />
+      <td className="col-overdue" />
       <td>
         <input
           className="todo-input"
@@ -34,7 +35,8 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
           autoFocus
         />
       </td>
-      <td className="col-deadline" />
+      <td className="col-date-input" />
+      <td className="col-time-input" />
       <td className="col-date" />
       <td className="col-date" />
       <td className="col-actions">
