@@ -319,6 +319,54 @@ test.describe("Deadline columns (US-008, US-013)", () => {
     await page.reload();
     await expect(page.locator('.col-date-input input')).toHaveValue("");
   });
+
+  test("auto-formats yyyymmdd to yyyy/mm/dd (US-016)", async ({ page }) => {
+    await page.request.post(`${API}/todos`, { data: { text: "自動整形", categoryId } });
+    await page.reload();
+
+    const dateInput = page.locator('.col-date-input input');
+    await dateInput.fill("20260801");
+    const putResp = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await dateInput.blur();
+    await putResp;
+
+    // Input should be auto-formatted
+    await expect(dateInput).toHaveValue("2026/08/01");
+
+    // Verify persisted correctly
+    await page.reload();
+    await expect(page.locator('.col-date-input input')).toHaveValue("2026/08/01");
+  });
+
+  test("auto-formats hhmm to hh:mm (US-016)", async ({ page }) => {
+    await page.request.post(`${API}/todos`, {
+      data: { text: "時刻整形", categoryId, deadline: "2026-07-01T00:00:00Z" },
+    });
+    await page.reload();
+
+    const timeInput = page.locator('.col-time-input input');
+    await timeInput.fill("1430");
+    const putResp = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
+    await timeInput.blur();
+    await putResp;
+
+    await expect(timeInput).toHaveValue("14:30");
+
+    await page.reload();
+    await expect(page.locator('.col-time-input input')).toHaveValue("14:30");
+  });
+
+  test("clears invalid date on blur (US-016)", async ({ page }) => {
+    await page.request.post(`${API}/todos`, { data: { text: "不正日付", categoryId } });
+    await page.reload();
+
+    const dateInput = page.locator('.col-date-input input');
+    await dateInput.fill("abc");
+    await dateInput.blur();
+
+    // Invalid input should be cleared
+    await expect(dateInput).toHaveValue("");
+  });
 });
 
 test.describe("Overdue highlighting (US-011, US-012)", () => {

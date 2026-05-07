@@ -290,3 +290,115 @@ describe("TodoTable - all mode grouping (US-007)", () => {
     expect(rowNums).toEqual(["1", "2", "1"]);
   });
 });
+
+describe("TodoTable - date/time auto-format and validation (US-016)", () => {
+  it("auto-formats yyyymmdd to yyyy/mm/dd on blur", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "20260507" } });
+    fireEvent.blur(dateInput);
+
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-05-07T00:00" });
+    expect(dateInput.value).toBe("2026/05/07");
+  });
+
+  it("auto-formats hhmm to hh:mm on blur", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const todosWithDeadline: Todo[] = [
+      { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={todosWithDeadline} onUpdate={onUpdate} />);
+    const timeInput = container.querySelector<HTMLInputElement>('.col-time-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(timeInput, { target: { value: "1430" } });
+    fireEvent.blur(timeInput);
+
+    expect(timeInput.value).toBe("14:30");
+  });
+
+  it("auto-formats 3-digit time (930 → 09:30)", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const todosWithDeadline: Todo[] = [
+      { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={todosWithDeadline} onUpdate={onUpdate} />);
+    const timeInput = container.querySelector<HTMLInputElement>('.col-time-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(timeInput, { target: { value: "930" } });
+    fireEvent.blur(timeInput);
+
+    expect(timeInput.value).toBe("09:30");
+  });
+
+  it("clears invalid date on blur", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "abc" } });
+    fireEvent.blur(dateInput);
+
+    expect(dateInput.value).toBe("");
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("clears non-existent date (Feb 29 in non-leap year) on blur", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "2026/02/29" } });
+    fireEvent.blur(dateInput);
+
+    expect(dateInput.value).toBe("");
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+
+  it("clears invalid time (hour > 23) on blur", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const todosWithDeadline: Todo[] = [
+      { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T14:30:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={todosWithDeadline} onUpdate={onUpdate} />);
+    const timeInput = container.querySelector<HTMLInputElement>('.col-time-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(timeInput, { target: { value: "2500" } });
+    fireEvent.blur(timeInput);
+
+    expect(timeInput.value).toBe("");
+  });
+
+  it("accepts yyyy-mm-dd format and converts to yyyy/mm/dd", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "2026-07-01" } });
+    fireEvent.blur(dateInput);
+
+    expect(dateInput.value).toBe("2026/07/01");
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T00:00" });
+  });
+
+  it("zero-pads single-digit month and day (2026/5/7 → 2026/05/07)", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "2026/5/7" } });
+    fireEvent.blur(dateInput);
+
+    expect(dateInput.value).toBe("2026/05/07");
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-05-07T00:00" });
+  });
+});
