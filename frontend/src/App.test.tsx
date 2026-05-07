@@ -1,10 +1,20 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
 
+// Mock fetch to avoid real API calls
+beforeEach(() => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => [],
+  } as Response);
+});
+
 describe("App", () => {
-  it("renders heading", () => {
+  it("renders heading", async () => {
     render(<App />);
-    expect(screen.getByText("するリスト")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("するリスト")).toBeInTheDocument();
+    });
   });
 });

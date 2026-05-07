@@ -4,11 +4,22 @@ import { prisma } from "../db.js";
 export const todoRoutes = new Hono();
 
 // GET /api/todos?categoryId=N - カテゴリに属する Todo 一覧
+// categoryId 省略時は全 Todo を category 情報付きで返却
 todoRoutes.get("/", async (c) => {
-  const categoryId = Number(c.req.query("categoryId"));
+  const categoryIdParam = c.req.query("categoryId");
+
+  if (categoryIdParam != null && categoryIdParam !== "") {
+    const categoryId = Number(categoryIdParam);
+    const todos = await prisma.todo.findMany({
+      where: { categoryId },
+      orderBy: { id: "asc" },
+    });
+    return c.json(todos);
+  }
+
   const todos = await prisma.todo.findMany({
-    where: { categoryId },
-    orderBy: { id: "asc" },
+    include: { category: { select: { id: true, name: true } } },
+    orderBy: [{ categoryId: "asc" }, { id: "asc" }],
   });
   return c.json(todos);
 });
