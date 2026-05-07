@@ -44,6 +44,9 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
   const [localDate, setLocalDate] = useState(server.date);
   const [localTime, setLocalTime] = useState(server.time);
 
+  // Display: "yyyy-mm-dd" → "yyyy/mm/dd"
+  const displayDate = localDate.replace(/-/g, "/");
+
   const commitDate = (date: string, time: string) => {
     const newVal = buildDeadline(date, time);
     const origVal = buildDeadline(server.date, server.time);
@@ -56,22 +59,26 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
     <>
       <td className="col-date-input">
         <input
-          type="date"
+          type="text"
           className="deadline-input"
-          value={localDate}
-          onChange={(e) => setLocalDate(e.target.value)}
+          value={displayDate}
+          onChange={(e) => setLocalDate(e.target.value.replace(/\//g, "-"))}
           onBlur={() => commitDate(localDate, localTime)}
           onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+          placeholder="yyyy/mm/dd"
+          maxLength={10}
         />
       </td>
       <td className="col-time-input">
         <input
-          type="time"
+          type="text"
           className="deadline-input"
           value={localTime}
           onChange={(e) => setLocalTime(e.target.value)}
           onBlur={() => commitDate(localDate, localTime)}
           onKeyDown={(e) => { if (e.key === "Enter") commitDate(localDate, localTime); }}
+          placeholder="hh:mm"
+          maxLength={5}
         />
       </td>
     </>

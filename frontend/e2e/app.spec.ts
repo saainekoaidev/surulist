@@ -264,27 +264,27 @@ test.describe("Deadline columns (US-008, US-013)", () => {
     await page.request.post(`${API}/todos`, { data: { text: "期限設定", categoryId } });
     await page.reload();
 
-    const dateInput = page.locator('input[type="date"]');
-    await dateInput.fill("2026-07-01");
+    const dateInput = page.locator('.col-date-input input');
+    await dateInput.fill("2026/07/01");
     // Wait for the PUT triggered by blur to complete
     const putResp = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
     await dateInput.blur();
     await putResp;
 
-    // Reload and verify the date persisted
+    // Reload and verify the date persisted (displayed as yyyy/mm/dd)
     await page.reload();
-    await expect(page.locator('input[type="date"]')).toHaveValue("2026-07-01");
+    await expect(page.locator('.col-date-input input')).toHaveValue("2026/07/01");
   });
 
   test("can set date and time together", async ({ page }) => {
     await page.request.post(`${API}/todos`, { data: { text: "日時設定", categoryId } });
     await page.reload();
 
-    const dateInput = page.locator('input[type="date"]');
-    const timeInput = page.locator('input[type="time"]');
+    const dateInput = page.locator('.col-date-input input');
+    const timeInput = page.locator('.col-time-input input');
 
     // Set date and wait for PUT to complete
-    await dateInput.fill("2026-07-01");
+    await dateInput.fill("2026/07/01");
     const datePut = page.waitForResponse(r => r.url().includes("/api/todos/") && r.request().method() === "PUT");
     await dateInput.blur();
     await datePut;
@@ -297,8 +297,8 @@ test.describe("Deadline columns (US-008, US-013)", () => {
 
     // Reload and verify both persisted
     await page.reload();
-    await expect(page.locator('input[type="date"]')).toHaveValue("2026-07-01");
-    await expect(page.locator('input[type="time"]')).toHaveValue("14:30");
+    await expect(page.locator('.col-date-input input')).toHaveValue("2026/07/01");
+    await expect(page.locator('.col-time-input input')).toHaveValue("14:30");
   });
 
   test("can clear a deadline by clearing date", async ({ page }) => {
@@ -307,7 +307,7 @@ test.describe("Deadline columns (US-008, US-013)", () => {
     });
     await page.reload();
 
-    const dateInput = page.locator('input[type="date"]');
+    const dateInput = page.locator('.col-date-input input');
     await expect(dateInput).not.toHaveValue("");
 
     // Clear the date input and wait for PUT
@@ -317,7 +317,7 @@ test.describe("Deadline columns (US-008, US-013)", () => {
     await putResp;
 
     await page.reload();
-    await expect(page.locator('input[type="date"]')).toHaveValue("");
+    await expect(page.locator('.col-date-input input')).toHaveValue("");
   });
 });
 

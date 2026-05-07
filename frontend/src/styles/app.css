@@ -361,9 +361,6 @@ thead th.col-date { font-size: 10px; }
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(30,64,175,.15);
 }
-/* Chromium: 日付/時刻入力の区切りスペースを除去 (yyyy/mm/dd, hh:mm) */
-.deadline-input::-webkit-datetime-edit-fields-wrapper { padding: 0; }
-.deadline-input::-webkit-datetime-edit-text { padding: 0 1px; }
 
 /* ============================================================
    Modal overlay + dialog

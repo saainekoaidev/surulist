@@ -102,22 +102,22 @@ describe("TodoTable - deadline columns (US-008, US-013)", () => {
     expect(screen.getByText("Time")).toBeInTheDocument();
   });
 
-  it("renders date and time inputs for each todo", () => {
+  it("renders date and time text inputs for each todo", () => {
     const { container } = render(<TodoTable {...defaultProps} />);
-    const dateInputs = container.querySelectorAll('input[type="date"]');
-    const timeInputs = container.querySelectorAll('input[type="time"]');
+    const dateInputs = container.querySelectorAll('.col-date-input input');
+    const timeInputs = container.querySelectorAll('.col-time-input input');
     expect(dateInputs).toHaveLength(2);
     expect(timeInputs).toHaveLength(2);
   });
 
   it("shows date and time values when deadline is set", () => {
     const { container } = render(<TodoTable {...defaultProps} />);
-    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
-    const timeInputs = container.querySelectorAll<HTMLInputElement>('input[type="time"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('.col-date-input input');
+    const timeInputs = container.querySelectorAll<HTMLInputElement>('.col-time-input input');
     // First todo has no deadline
     expect(dateInputs[0].value).toBe("");
     expect(timeInputs[0].value).toBe("");
-    // Second todo has deadline 2026-06-15T14:30:00Z — displayed in local time
+    // Second todo has deadline 2026-06-15T14:30:00Z — displayed in local time with "/" separator
     expect(dateInputs[1].value).not.toBe("");
     expect(timeInputs[1].value).not.toBe("");
   });
@@ -125,10 +125,10 @@ describe("TodoTable - deadline columns (US-008, US-013)", () => {
   it("calls onUpdate with deadline on date blur (deferred commit)", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('.col-date-input input');
 
     const { fireEvent } = await import("@testing-library/react");
-    fireEvent.change(dateInputs[0], { target: { value: "2026-07-01" } });
+    fireEvent.change(dateInputs[0], { target: { value: "2026/07/01" } });
     // onUpdate should NOT be called yet (deferred)
     expect(onUpdate).not.toHaveBeenCalled();
     // Trigger blur to commit
@@ -139,10 +139,10 @@ describe("TodoTable - deadline columns (US-008, US-013)", () => {
   it("calls onUpdate with deadline on Enter key", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('.col-date-input input');
 
     const { fireEvent } = await import("@testing-library/react");
-    fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+    fireEvent.change(dateInputs[0], { target: { value: "2026/08/01" } });
     fireEvent.keyDown(dateInputs[0], { key: "Enter" });
     expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-08-01T00:00" });
   });
@@ -150,7 +150,7 @@ describe("TodoTable - deadline columns (US-008, US-013)", () => {
   it("calls onUpdate with null when date is cleared", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('.col-date-input input');
 
     // Clear the second todo's date (which has a value)
     const { fireEvent } = await import("@testing-library/react");
@@ -162,12 +162,12 @@ describe("TodoTable - deadline columns (US-008, US-013)", () => {
   it("combines date and time when both are set", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const dateInputs = container.querySelectorAll<HTMLInputElement>('input[type="date"]');
-    const timeInputs = container.querySelectorAll<HTMLInputElement>('input[type="time"]');
+    const dateInputs = container.querySelectorAll<HTMLInputElement>('.col-date-input input');
+    const timeInputs = container.querySelectorAll<HTMLInputElement>('.col-time-input input');
 
     const { fireEvent } = await import("@testing-library/react");
-    // Set date first
-    fireEvent.change(dateInputs[0], { target: { value: "2026-07-01" } });
+    // Set date first (display format with "/" → internal "-")
+    fireEvent.change(dateInputs[0], { target: { value: "2026/07/01" } });
     fireEvent.blur(dateInputs[0]);
     expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T00:00" });
 
