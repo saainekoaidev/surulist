@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface Props {
   onSubmit: (text: string) => Promise<void>;
@@ -8,8 +8,13 @@ interface Props {
 export function TodoNewRow({ onSubmit, onCancel }: Props) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const cancelledRef = useRef(false);
 
   const handleSubmit = async () => {
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return;
+    }
     if (!text.trim() || submitting) return;
     setSubmitting(true);
     try {
@@ -18,6 +23,11 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancel = () => {
+    cancelledRef.current = true;
+    onCancel();
   };
 
   return (
@@ -32,9 +42,10 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
           className="todo-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onBlur={handleSubmit}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSubmit();
-            if (e.key === "Escape") onCancel();
+            if (e.key === "Escape") handleCancel();
           }}
           placeholder="Todoを入力 (全角40文字まで)"
           maxLength={40}
@@ -45,11 +56,7 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
       <td className="col-time-input" />
       <td className="col-date" />
       <td className="col-date" />
-      <td className="col-actions">
-        <button className="btn btn-primary btn-sm" onClick={handleSubmit} disabled={submitting}>
-          登録
-        </button>
-      </td>
+      <td className="col-actions" />
     </tr>
   );
 }
