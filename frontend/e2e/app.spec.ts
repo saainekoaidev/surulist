@@ -380,6 +380,40 @@ test.describe("Overdue highlighting (US-011, US-012)", () => {
   });
 });
 
+test.describe("Refresh button (US-014)", () => {
+  let categoryId: number;
+
+  test.beforeEach(async ({ page }) => {
+    await cleanupAll(page);
+    const res = await page.request.post(`${API}/categories`, { data: { name: "リフレッシュテスト" } });
+    const cat = await res.json();
+    categoryId = cat.id;
+    await page.goto("/");
+    await clearLocalStorage(page);
+    await page.reload();
+    await expect(page.locator(".toolbar select")).toHaveValue(String(categoryId));
+  });
+
+  test.afterEach(async ({ page }) => {
+    await cleanupAll(page);
+  });
+
+  test("refresh button is visible and re-fetches todos", async ({ page }) => {
+    await page.request.post(`${API}/todos`, { data: { text: "リフレッシュ対象", categoryId } });
+
+    // Before refresh, the todo is not visible (added via API after page load)
+    await expect(page.getByText("リフレッシュ対象")).not.toBeVisible();
+
+    // Click refresh button to re-fetch
+    const refreshBtn = page.locator(".btn-refresh");
+    await expect(refreshBtn).toBeVisible();
+    await refreshBtn.click();
+
+    // After refresh, the todo should appear
+    await expect(page.getByText("リフレッシュ対象")).toBeVisible();
+  });
+});
+
 test.describe("Show all mode (US-007)", () => {
   let cat1Id: number;
   let cat2Id: number;

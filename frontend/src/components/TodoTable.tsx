@@ -11,6 +11,7 @@ interface Props {
   onCancelAdd: () => void;
   onUpdate: (id: number, data: { text?: string; status?: string; deadline?: string | null }) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  onRefresh?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -104,7 +105,7 @@ function groupTodos(todos: (Todo | TodoWithCategory)[], isAllMode: boolean): Tod
   return Array.from(map.values());
 }
 
-export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUpdate, onDelete }: Props) {
+export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUpdate, onDelete, onRefresh }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
 
@@ -136,6 +137,16 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
       <div className="section-bar">
         <h2>Todo 一覧</h2>
         <span className="badge">{todos.length}件</span>
+        <span style={{ flex: 1 }} />
+        {onRefresh && (
+          <button className="btn-refresh" onClick={onRefresh} title="リフレッシュ">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 1v5h5" />
+              <path d="M15 15v-5h-5" />
+              <path d="M13.5 6A6 6 0 0 0 3 3.5L1 6M2.5 10a6 6 0 0 0 10.5 2.5L15 10" />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="card">
         <table>
