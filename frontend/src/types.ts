@@ -25,6 +25,8 @@ export interface TodoWithCategory extends Todo {
 
 export type CategorySelection = number | "all" | null;
 
+export type SortKey = "registDate" | "deadline";
+
 export const STATUSES = [
   "Not Started",
   "In Progress",

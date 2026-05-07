@@ -560,3 +560,60 @@ test.describe("Show all mode (US-007)", () => {
     await expect(page.getByText("仕事タスク改")).toBeVisible();
   });
 });
+
+test.describe("Sort feature (US-019)", () => {
+  let categoryId: number;
+
+  test.beforeEach(async ({ page }) => {
+    await cleanupAll(page);
+    const res = await page.request.post(`${API}/categories`, { data: { name: "ソートテスト" } });
+    const cat = await res.json();
+    categoryId = cat.id;
+    // Create todos with different deadlines
+    await page.request.post(`${API}/todos`, { data: { text: "期限なし", categoryId } });
+    await page.request.post(`${API}/todos`, { data: { text: "早い期限", categoryId, deadline: "2026-06-01T10:00:00Z" } });
+    await page.request.post(`${API}/todos`, { data: { text: "遅い期限", categoryId, deadline: "2026-07-01T10:00:00Z" } });
+    await page.goto("/");
+    await clearLocalStorage(page);
+    await page.reload();
+    await expect(page.locator(".toolbar select")).toHaveValue(String(categoryId));
+  });
+
+  test.afterEach(async ({ page }) => {
+    await cleanupAll(page);
+    await clearLocalStorage(page);
+  });
+
+  test("sort select is visible in section-bar", async ({ page }) => {
+    const sortSelect = page.locator(".sort-select");
+    await expect(sortSelect).toBeVisible();
+    await expect(sortSelect).toHaveValue("registDate");
+  });
+
+  test("switching to deadline sort reorders todos", async ({ page }) => {
+    // Default: registDate order (期限なし, 早い期限, 遅い期限)
+    const todoTexts = page.locator(".todo-text-clickable");
+    await expect(todoTexts.nth(0)).toHaveText("期限なし");
+
+    // Switch to deadline sort
+    await page.locator(".sort-select").selectOption("deadline");
+
+    // Deadline DESC: 遅い期限, 早い期限, 期限なし (null last)
+    await expect(todoTexts.nth(0)).toHaveText("遅い期限");
+    await expect(todoTexts.nth(1)).toHaveText("早い期限");
+    await expect(todoTexts.nth(2)).toHaveText("期限なし");
+  });
+
+  test("default sort preference persists after reload", async ({ page }) => {
+    // Open dialog and change default sort
+    await page.getByRole("button", { name: "編集" }).click();
+    await page.locator(".sort-select-sm").selectOption("deadline");
+    await page.getByRole("button", { name: "閉じる" }).click();
+
+    // Reload page
+    await page.reload();
+
+    // Sort select should now default to deadline
+    await expect(page.locator(".sort-select")).toHaveValue("deadline");
+  });
+});

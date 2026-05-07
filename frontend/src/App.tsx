@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import type { CategorySelection } from "./types";
+import type { CategorySelection, SortKey } from "./types";
 import { useCategories } from "./hooks/useCategories";
 import { useTodos } from "./hooks/useTodos";
 import { useShowAllPreference } from "./hooks/useShowAllPreference";
+import { useSortPreference } from "./hooks/useSortPreference";
 import { CategorySelector } from "./components/CategorySelector";
 import { CategoryDialog } from "./components/CategoryDialog";
 import { TodoTable } from "./components/TodoTable";
@@ -12,6 +13,8 @@ export function App() {
   const [isAdding, setIsAdding] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [showAllEnabled, setShowAllEnabled] = useShowAllPreference();
+  const [defaultSort, setDefaultSort] = useSortPreference();
+  const [currentSort, setCurrentSort] = useState<SortKey>(defaultSort);
 
   const {
     categories,
@@ -114,6 +117,8 @@ export function App() {
             todos={todos}
             isAllMode={isAllMode}
             isAdding={isAdding}
+            sortKey={currentSort}
+            onSortChange={setCurrentSort}
             onAdd={handleAdd}
             onCancelAdd={() => setIsAdding(false)}
             onUpdate={updateTodo}
@@ -127,6 +132,8 @@ export function App() {
             categories={categories}
             showAllEnabled={showAllEnabled}
             onShowAllChange={setShowAllEnabled}
+            defaultSort={defaultSort}
+            onDefaultSortChange={setDefaultSort}
             onAdd={addCategory}
             onUpdate={updateCategory}
             onDelete={handleDeleteCategory}

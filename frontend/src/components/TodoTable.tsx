@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { Todo, TodoWithCategory } from "../types";
+import type { Todo, TodoWithCategory, SortKey } from "../types";
 import { STATUSES } from "../types";
 import { TodoNewRow } from "./TodoNewRow";
 
@@ -7,6 +7,8 @@ interface Props {
   todos: (Todo | TodoWithCategory)[];
   isAllMode: boolean;
   isAdding: boolean;
+  sortKey: SortKey;
+  onSortChange: (key: SortKey) => void;
   onAdd: (text: string) => Promise<void>;
   onCancelAdd: () => void;
   onUpdate: (id: number, data: { text?: string; status?: string; deadline?: string | null }) => Promise<void>;
@@ -194,7 +196,26 @@ function groupTodos(todos: (Todo | TodoWithCategory)[], isAllMode: boolean): Tod
   return Array.from(map.values());
 }
 
-export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUpdate, onDelete, onRefresh }: Props) {
+function sortTodos(todos: (Todo | TodoWithCategory)[], key: SortKey): (Todo | TodoWithCategory)[] {
+  const sorted = [...todos];
+  if (key === "registDate") {
+    sorted.sort((a, b) => {
+      const cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      return cmp !== 0 ? cmp : a.id - b.id;
+    });
+  } else {
+    sorted.sort((a, b) => {
+      if (!a.deadline && !b.deadline) return b.id - a.id;
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      const cmp = new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
+      return cmp !== 0 ? cmp : b.id - a.id;
+    });
+  }
+  return sorted;
+}
+
+export function TodoTable({ todos, isAllMode, isAdding, sortKey, onSortChange, onAdd, onCancelAdd, onUpdate, onDelete, onRefresh }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const editCancelledRef = useRef(false);
@@ -230,7 +251,10 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
     await onUpdate(id, { status });
   };
 
-  const groups = groupTodos(todos, isAllMode);
+  const groups = groupTodos(todos, isAllMode).map(g => ({
+    ...g,
+    todos: sortTodos(g.todos, sortKey),
+  }));
 
   return (
     <>
@@ -238,6 +262,14 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
         <h2>Todo 一覧</h2>
         <span className="badge">{todos.length}件</span>
         <span style={{ flex: 1 }} />
+        <select
+          className="sort-select"
+          value={sortKey}
+          onChange={(e) => onSortChange(e.target.value as SortKey)}
+        >
+          <option value="registDate">登録日順</option>
+          <option value="deadline">期限順</option>
+        </select>
         {onRefresh && (
           <button className="btn-refresh" onClick={onRefresh} title="リフレッシュ">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

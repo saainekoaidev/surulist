@@ -13,6 +13,8 @@ const defaultProps = {
   categories,
   showAllEnabled: false,
   onShowAllChange: vi.fn(),
+  defaultSort: "registDate" as const,
+  onDefaultSortChange: vi.fn(),
   onAdd: vi.fn(),
   onUpdate: vi.fn(),
   onDelete: vi.fn(),
@@ -96,5 +98,25 @@ describe("CategoryDialog", () => {
 
     expect(window.confirm).toHaveBeenCalledWith("この目的を削除してよろしいですか?");
     expect(onDelete).toHaveBeenCalledWith(2);
+  });
+
+  it("renders default sort select with registDate selected", () => {
+    render(<CategoryDialog {...defaultProps} defaultSort="registDate" />);
+    const sortSelect = screen.getByDisplayValue("登録日順");
+    expect(sortSelect).toBeInTheDocument();
+  });
+
+  it("renders default sort select with deadline selected", () => {
+    render(<CategoryDialog {...defaultProps} defaultSort="deadline" />);
+    const sortSelect = screen.getByDisplayValue("期限順");
+    expect(sortSelect).toBeInTheDocument();
+  });
+
+  it("calls onDefaultSortChange when sort select is changed", async () => {
+    const onDefaultSortChange = vi.fn();
+    render(<CategoryDialog {...defaultProps} onDefaultSortChange={onDefaultSortChange} />);
+    const sortSelect = screen.getByDisplayValue("登録日順");
+    await userEvent.selectOptions(sortSelect, "deadline");
+    expect(onDefaultSortChange).toHaveBeenCalledWith("deadline");
   });
 });
