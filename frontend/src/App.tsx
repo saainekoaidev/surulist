@@ -118,6 +118,7 @@ export function App() {
             onCancelAdd={() => setIsAdding(false)}
             onUpdate={updateTodo}
             onDelete={deleteTodo}
+            onRefresh={fetchTodos}
           />
         )}
 

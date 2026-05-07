@@ -241,6 +241,26 @@ describe("TodoTable - overdue highlighting (US-011, US-012)", () => {
   });
 });
 
+describe("TodoTable - refresh button (US-014)", () => {
+  it("renders refresh button when onRefresh is provided", () => {
+    const onRefresh = vi.fn();
+    render(<TodoTable {...defaultProps} onRefresh={onRefresh} />);
+    expect(screen.getByTitle("リフレッシュ")).toBeInTheDocument();
+  });
+
+  it("does not render refresh button when onRefresh is not provided", () => {
+    render(<TodoTable {...defaultProps} />);
+    expect(screen.queryByTitle("リフレッシュ")).not.toBeInTheDocument();
+  });
+
+  it("calls onRefresh when refresh button is clicked", async () => {
+    const onRefresh = vi.fn();
+    render(<TodoTable {...defaultProps} onRefresh={onRefresh} />);
+    await userEvent.click(screen.getByTitle("リフレッシュ"));
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("TodoTable - all mode grouping (US-007)", () => {
   const groupedTodos: TodoWithCategory[] = [
     { id: 1, text: "仕事タスク", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },
