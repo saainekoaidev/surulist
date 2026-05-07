@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { Todo, TodoWithCategory } from "../types";
 import { STATUSES } from "../types";
 import { TodoNewRow } from "./TodoNewRow";
@@ -93,14 +93,27 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
   const server = toDateAndTime(deadline);
   const [dateText, setDateText] = useState(server.date ? server.date.replace(/-/g, "/") : "");
   const [timeText, setTimeText] = useState(server.time);
+  const cancelledRef = useRef(false);
+
+  // Sync local state when server prop changes (after PUT response or refresh)
+  useEffect(() => {
+    const s = toDateAndTime(deadline);
+    setDateText(s.date ? s.date.replace(/-/g, "/") : "");
+    setTimeText(s.time);
+  }, [deadline]);
 
   const commit = () => {
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      return;
+    }
     const parsedDate = parseDateInput(dateText);
     const parsedTime = parseTimeInput(timeText);
 
     // Normalize display: valid → formatted, invalid → cleared
+    // When date exists but time is empty, show "00:00"
     setDateText(parsedDate ? parsedDate.replace(/-/g, "/") : "");
-    setTimeText(parsedTime ?? "");
+    setTimeText(parsedTime ?? (parsedDate ? "00:00" : ""));
 
     const newVal = parsedDate ? buildDeadline(parsedDate, parsedTime ?? "") : null;
     const origVal = buildDeadline(server.date, server.time);
@@ -108,6 +121,14 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
       onUpdate(todoId, { deadline: newVal });
     }
   };
+
+  const cancel = () => {
+    cancelledRef.current = true;
+    setDateText(server.date ? server.date.replace(/-/g, "/") : "");
+    setTimeText(server.time);
+  };
+
+  const hasDate = !!dateText.trim();
 
   return (
     <>
@@ -118,7 +139,10 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
           value={dateText}
           onChange={(e) => setDateText(e.target.value)}
           onBlur={commit}
-          onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") cancel();
+          }}
           placeholder="yyyy/mm/dd"
           maxLength={10}
         />
@@ -130,9 +154,13 @@ function DeadlineCell({ todoId, deadline, onUpdate }: {
           value={timeText}
           onChange={(e) => setTimeText(e.target.value)}
           onBlur={commit}
-          onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") cancel();
+          }}
           placeholder="hh:mm"
           maxLength={5}
+          disabled={!hasDate}
         />
       </td>
     </>
@@ -169,15 +197,26 @@ function groupTodos(todos: (Todo | TodoWithCategory)[], isAllMode: boolean): Tod
 export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUpdate, onDelete, onRefresh }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
+  const editCancelledRef = useRef(false);
 
   const startEdit = (todo: Todo | TodoWithCategory) => {
     setEditingId(todo.id);
     setEditText(todo.text);
+    editCancelledRef.current = false;
   };
 
   const commitEdit = async () => {
+    if (editCancelledRef.current) {
+      editCancelledRef.current = false;
+      return;
+    }
     if (editingId == null || !editText.trim()) return;
     await onUpdate(editingId, { text: editText.trim() });
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    editCancelledRef.current = true;
     setEditingId(null);
   };
 
@@ -271,9 +310,10 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                             className="editing-input"
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
+                            onBlur={commitEdit}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") commitEdit();
-                              if (e.key === "Escape") setEditingId(null);
+                              if (e.key === "Escape") cancelEdit();
                             }}
                             maxLength={40}
                             autoFocus
@@ -293,19 +333,13 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                         {todo.updatedAt !== todo.createdAt ? formatDate(todo.updatedAt) : ""}
                       </td>
                       <td className="col-actions">
-                        {isEditing && (
-                          <>
-                            <button className="btn btn-primary btn-sm" onClick={commitEdit}>
-                              更新
-                            </button>{" "}
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleDelete(todo.id)}
-                            >
-                              削除
-                            </button>
-                          </>
-                        )}
+                        <button
+                          className="btn-icon"
+                          title="削除"
+                          onClick={() => handleDelete(todo.id)}
+                        >
+                          ×
+                        </button>
                       </td>
                     </tr>
                   );

@@ -3,6 +3,8 @@
 > 各 User Story (US) は `US-NNN	<本文>` (タブ区切り) の 1 行で記述する。新しい US は冒頭に追記して逆時系列順に並べる。
 > 1 US 1 Issue 1 PR を原則とする (詳細は `CLAUDE.md` の per-US merge ceremony を参照)。
 
+US-018	編集フローを統一する。Todoテキストの更新ボタンを廃止し, Enter/blur/Tabで確定・Escapeでキャンセルに統一する (Date/Timeと同じ操作体系)。Date/TimeにもEscapeキャンセルを追加する。削除ボタンは×アイコンに変更し, 編集状態によらず常時表示する。
+US-017	Date/Time入力の連動制御を追加する。DATEが空欄の場合はTIME入力をdisabledにする。DATEに値がありTIMEが空の場合, commit時にTIMEを「00:00」と表示する。サーバ応答後のローカル表示をuseEffectで同期する。
 US-016	Date/Time入力に自動整形とバリデーションを追加する。数字のみ入力(20260507)でyyyy/mm/ddに, 時刻(1234)でhh:mmに自動変換する。無効な日付・時刻はblur/Enter時点で消去する。
 US-015	テーブルの視覚的コンパクト化。列の左右余白(padding)を削減してTodo入力枠を拡大する。Todoテキストのフォントを14px→13px, Date/Timeを13px→12pxに縮小する。Date/Time入力の区切りスペース(yyyy / mm / dd等)を除去してyyyy/mm/ddにする。
 US-014	Todo一覧にリフレッシュボタン(くるくる矢印アイコン)を追加する。押下でTodoリストを再取得し, Deadline比較を再実行して!!マーク・背景色を更新する。ボタンはTodo一覧のラベル・件数バッジと同じ高さで, テーブル右端に揃えて配置する。

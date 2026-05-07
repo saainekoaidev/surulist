@@ -154,7 +154,7 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
     await expect(page.locator(".todo-input")).not.toBeVisible();
   });
 
-  test("can edit a todo text", async ({ page }) => {
+  test("can edit a todo text (Enter to confirm)", async ({ page }) => {
     await page.request.post(`${API}/todos`, { data: { text: "編集前", categoryId } });
     await page.reload();
 
@@ -162,7 +162,7 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
     const input = page.locator(".editing-input");
     await expect(input).toBeVisible();
     await input.fill("編集後");
-    await page.getByRole("button", { name: "更新" }).click();
+    await input.press("Enter");
 
     await expect(page.getByText("編集後")).toBeVisible();
     await expect(page.getByText("編集前")).not.toBeVisible();
@@ -179,14 +179,13 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
     await expect(page.locator(".status-select")).toHaveValue("Done");
   });
 
-  test("can delete a todo with confirmation", async ({ page }) => {
+  test("can delete a todo with confirmation via × button", async ({ page }) => {
     await page.request.post(`${API}/todos`, { data: { text: "削除対象", categoryId } });
     await page.reload();
 
-    await page.getByText("削除対象").click();
-
     page.on("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "削除" }).click();
+    // × button is always visible — no need to enter edit mode
+    await page.locator("button[title='削除']").click();
 
     await expect(page.getByText("削除対象")).not.toBeVisible();
     await expect(page.getByText("0件")).toBeVisible();
@@ -199,13 +198,10 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
     // Register dialog handler BEFORE triggering the action
     page.on("dialog", (dialog) => dialog.dismiss());
 
-    await page.getByText("残すタスク").click();
-    await page.getByRole("button", { name: "削除" }).click();
+    // × button is always visible — no need to enter edit mode
+    await page.locator("button[title='削除']").click();
 
-    // After dismiss, row stays in edit mode — input still has the value
-    await expect(page.locator(".editing-input")).toHaveValue("残すタスク");
-    // Escape to exit edit mode, then verify text is still shown
-    await page.locator(".editing-input").press("Escape");
+    // After dismiss, todo text is still visible
     await expect(page.getByText("残すタスク")).toBeVisible();
   });
 
