@@ -9,13 +9,24 @@ interface Props {
   isAdding: boolean;
   onAdd: (text: string) => Promise<void>;
   onCancelAdd: () => void;
-  onUpdate: (id: number, data: { text?: string; status?: string }) => Promise<void>;
+  onUpdate: (id: number, data: { text?: string; status?: string; deadline?: string | null }) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
 interface TodoGroup {
@@ -65,6 +76,10 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
     await onUpdate(id, { status });
   };
 
+  const handleDeadlineChange = async (id: number, value: string) => {
+    await onUpdate(id, { deadline: value || null });
+  };
+
   const groups = groupTodos(todos, isAllMode);
 
   return (
@@ -80,6 +95,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
               <th className="col-num">#</th>
               <th className="col-status">Status</th>
               <th>Todo</th>
+              <th className="col-deadline">Deadline</th>
               <th className="col-date">RegistDate</th>
               <th className="col-date">UpdateDate</th>
               <th className="col-actions" />
@@ -89,7 +105,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
             {isAdding && <TodoNewRow onSubmit={onAdd} onCancel={onCancelAdd} />}
             {todos.length === 0 && !isAdding && (
               <tr>
-                <td colSpan={6} className="empty-state">
+                <td colSpan={7} className="empty-state">
                   {isAllMode
                     ? "Todo がありません。"
                     : "Todo がありません。「+ 新規追加」で追加してください。"}
@@ -100,7 +116,7 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
               <Fragment key={group.categoryId || "single"}>
                 {isAllMode && (
                   <tr className="group-header-row">
-                    <td colSpan={6} className="group-header">
+                    <td colSpan={7} className="group-header">
                       {group.categoryName}
                     </td>
                   </tr>
@@ -143,6 +159,14 @@ export function TodoTable({ todos, isAllMode, isAdding, onAdd, onCancelAdd, onUp
                             {todo.text}
                           </span>
                         )}
+                      </td>
+                      <td className="col-deadline">
+                        <input
+                          type="datetime-local"
+                          className="deadline-input"
+                          value={toDatetimeLocalValue(todo.deadline)}
+                          onChange={(e) => handleDeadlineChange(todo.id, e.target.value)}
+                        />
                       </td>
                       <td className="col-date">{formatDate(todo.createdAt)}</td>
                       <td className="col-date">

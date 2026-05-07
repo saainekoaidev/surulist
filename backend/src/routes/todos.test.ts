@@ -78,6 +78,23 @@ describe("POST /api/todos", () => {
       data: { text: "新しいタスク", categoryId: 1 },
     });
   });
+
+  it("creates a todo with deadline (US-008)", async () => {
+    const deadline = new Date("2026-06-01T09:00:00Z");
+    const created = { id: 2, text: "期限付き", status: "Not Started", categoryId: 1, deadline, createdAt: new Date(), updatedAt: new Date() };
+    mockPrisma.todo.create.mockResolvedValue(created as never);
+
+    const res = await app.request("/api/todos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "期限付き", categoryId: 1, deadline: "2026-06-01T09:00:00Z" }),
+    });
+
+    expect(res.status).toBe(201);
+    expect(mockPrisma.todo.create).toHaveBeenCalledWith({
+      data: { text: "期限付き", categoryId: 1, deadline: expect.any(Date) },
+    });
+  });
 });
 
 describe("PUT /api/todos/:id", () => {
@@ -116,6 +133,41 @@ describe("PUT /api/todos/:id", () => {
     expect(mockPrisma.todo.update).toHaveBeenCalledWith({
       where: { id: 1 },
       data: { status: "Done" },
+    });
+  });
+
+  it("sets deadline on a todo (US-008)", async () => {
+    const deadline = new Date("2026-06-15T14:30:00Z");
+    const updated = { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline, createdAt: new Date(), updatedAt: new Date() };
+    mockPrisma.todo.update.mockResolvedValue(updated as never);
+
+    const res = await app.request("/api/todos/1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deadline: "2026-06-15T14:30:00Z" }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.todo.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { deadline: expect.any(Date) },
+    });
+  });
+
+  it("clears deadline by setting null (US-008)", async () => {
+    const updated = { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: null, createdAt: new Date(), updatedAt: new Date() };
+    mockPrisma.todo.update.mockResolvedValue(updated as never);
+
+    const res = await app.request("/api/todos/1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deadline: null }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.todo.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { deadline: null },
     });
   });
 });

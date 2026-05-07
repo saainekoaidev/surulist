@@ -22,6 +22,7 @@ model Todo {
   status     String   @default("Not Started")
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId Int
+  deadline   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

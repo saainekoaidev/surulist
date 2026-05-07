@@ -237,6 +237,73 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
   });
 });
 
+test.describe("Deadline column (US-008)", () => {
+  let categoryId: number;
+
+  test.beforeEach(async ({ page }) => {
+    await cleanupAll(page);
+    const res = await page.request.post(`${API}/categories`, { data: { name: "期限テスト" } });
+    const cat = await res.json();
+    categoryId = cat.id;
+    await page.goto("/");
+    await clearLocalStorage(page);
+    await page.reload();
+    await expect(page.locator(".toolbar select")).toHaveValue(String(categoryId));
+  });
+
+  test.afterEach(async ({ page }) => {
+    await cleanupAll(page);
+  });
+
+  test("Deadline column header is visible", async ({ page }) => {
+    await expect(page.locator("thead th", { hasText: "Deadline" })).toBeVisible();
+  });
+
+  test("can set a deadline on a todo", async ({ page }) => {
+    await page.request.post(`${API}/todos`, { data: { text: "期限設定", categoryId } });
+    await page.reload();
+
+    const deadlineInput = page.locator('.deadline-input');
+    await deadlineInput.fill("2026-07-01T10:00");
+
+    // Reload and verify the deadline persisted
+    await page.reload();
+    const input = page.locator('.deadline-input');
+    await expect(input).toHaveValue("2026-07-01T10:00");
+  });
+
+  test("can change an existing deadline", async ({ page }) => {
+    await page.request.post(`${API}/todos`, {
+      data: { text: "期限変更", categoryId, deadline: "2026-07-01T10:00:00Z" },
+    });
+    await page.reload();
+
+    const deadlineInput = page.locator('.deadline-input');
+    await expect(deadlineInput).not.toHaveValue("");
+
+    await deadlineInput.fill("2026-08-15T14:30");
+
+    await page.reload();
+    await expect(page.locator('.deadline-input')).toHaveValue("2026-08-15T14:30");
+  });
+
+  test("can clear a deadline", async ({ page }) => {
+    await page.request.post(`${API}/todos`, {
+      data: { text: "期限クリア", categoryId, deadline: "2026-07-01T10:00:00Z" },
+    });
+    await page.reload();
+
+    const deadlineInput = page.locator('.deadline-input');
+    await expect(deadlineInput).not.toHaveValue("");
+
+    // Clear the input
+    await deadlineInput.fill("");
+
+    await page.reload();
+    await expect(page.locator('.deadline-input')).toHaveValue("");
+  });
+});
+
 test.describe("Show all mode (US-007)", () => {
   let cat1Id: number;
   let cat2Id: number;

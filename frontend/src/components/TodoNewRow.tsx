@@ -34,6 +34,7 @@ export function TodoNewRow({ onSubmit, onCancel }: Props) {
           autoFocus
         />
       </td>
+      <td className="col-deadline" />
       <td className="col-date" />
       <td className="col-date" />
       <td className="col-actions">
