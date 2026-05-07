@@ -33,7 +33,7 @@ export function useTodos(categoryId: CategorySelection) {
     await fetchTodos();
   };
 
-  const updateTodo = async (id: number, data: { text?: string; status?: string }) => {
+  const updateTodo = async (id: number, data: { text?: string; status?: string; deadline?: string | null }) => {
     const res = await fetch(`${API}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

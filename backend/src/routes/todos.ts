@@ -26,23 +26,38 @@ todoRoutes.get("/", async (c) => {
 
 // POST /api/todos - Todo 作成
 todoRoutes.post("/", async (c) => {
-  const { text, categoryId } = await c.req.json<{
+  const { text, categoryId, deadline } = await c.req.json<{
     text: string;
     categoryId: number;
+    deadline?: string | null;
   }>();
   const todo = await prisma.todo.create({
-    data: { text, categoryId },
+    data: {
+      text,
+      categoryId,
+      ...(deadline ? { deadline: new Date(deadline) } : {}),
+    },
   });
   return c.json(todo, 201);
 });
 
-// PUT /api/todos/:id - Todo 更新 (text / status)
+// PUT /api/todos/:id - Todo 更新 (text / status / deadline)
 todoRoutes.put("/:id", async (c) => {
   const id = Number(c.req.param("id"));
-  const body = await c.req.json<{ text?: string; status?: string }>();
+  const body = await c.req.json<{
+    text?: string;
+    status?: string;
+    deadline?: string | null;
+  }>();
+  const data: { text?: string; status?: string; deadline?: Date | null } = {};
+  if (body.text !== undefined) data.text = body.text;
+  if (body.status !== undefined) data.status = body.status;
+  if (body.deadline !== undefined) {
+    data.deadline = body.deadline ? new Date(body.deadline) : null;
+  }
   const todo = await prisma.todo.update({
     where: { id },
-    data: body,
+    data,
   });
   return c.json(todo);
 });

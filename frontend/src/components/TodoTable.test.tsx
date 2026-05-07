@@ -5,8 +5,8 @@ import { TodoTable } from "./TodoTable";
 import type { Todo, TodoWithCategory } from "../types";
 
 const todos: Todo[] = [
-  { id: 1, text: "タスクA", status: "Not Started", categoryId: 1, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
-  { id: 2, text: "タスクB", status: "Done", categoryId: 1, createdAt: "2026-05-02T00:00:00Z", updatedAt: "2026-05-03T00:00:00Z" },
+  { id: 1, text: "タスクA", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+  { id: 2, text: "タスクB", status: "Done", categoryId: 1, deadline: "2026-06-15T14:30:00Z", createdAt: "2026-05-02T00:00:00Z", updatedAt: "2026-05-03T00:00:00Z" },
 ];
 
 const defaultProps = {
@@ -95,11 +95,59 @@ describe("TodoTable", () => {
   });
 });
 
+describe("TodoTable - deadline column (US-008)", () => {
+  it("renders Deadline column header", () => {
+    render(<TodoTable {...defaultProps} />);
+    expect(screen.getByText("Deadline")).toBeInTheDocument();
+  });
+
+  it("renders datetime-local input for each todo", () => {
+    const { container } = render(<TodoTable {...defaultProps} />);
+    const deadlineInputs = container.querySelectorAll('input[type="datetime-local"]');
+    expect(deadlineInputs).toHaveLength(2);
+  });
+
+  it("shows formatted deadline value when set", () => {
+    const { container } = render(<TodoTable {...defaultProps} />);
+    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+    // First todo has no deadline
+    expect(deadlineInputs[0].value).toBe("");
+    // Second todo has deadline 2026-06-15T14:30:00Z — displayed in local time
+    expect(deadlineInputs[1].value).not.toBe("");
+  });
+
+  it("calls onUpdate with deadline when datetime is changed", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+
+    // Simulate changing the first todo's deadline
+    await userEvent.clear(deadlineInputs[0]);
+    // fireEvent is more reliable for datetime-local inputs
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(deadlineInputs[0], { target: { value: "2026-07-01T10:00" } });
+
+    expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-07-01T10:00" });
+  });
+
+  it("calls onUpdate with null when deadline is cleared", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const deadlineInputs = container.querySelectorAll<HTMLInputElement>('input[type="datetime-local"]');
+
+    // Clear the second todo's deadline (which has a value)
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(deadlineInputs[1], { target: { value: "" } });
+
+    expect(onUpdate).toHaveBeenCalledWith(2, { deadline: null });
+  });
+});
+
 describe("TodoTable - all mode grouping (US-007)", () => {
   const groupedTodos: TodoWithCategory[] = [
-    { id: 1, text: "仕事タスク", status: "Not Started", categoryId: 1, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },
-    { id: 2, text: "仕事タスク2", status: "Done", categoryId: 1, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },
-    { id: 3, text: "私用タスク", status: "In Progress", categoryId: 2, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 2, name: "私用" } },
+    { id: 1, text: "仕事タスク", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },
+    { id: 2, text: "仕事タスク2", status: "Done", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 1, name: "仕事" } },
+    { id: 3, text: "私用タスク", status: "In Progress", categoryId: 2, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z", category: { id: 2, name: "私用" } },
   ];
 
   it("renders category group headers", () => {

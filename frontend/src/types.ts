@@ -11,6 +11,7 @@ export interface Todo {
   text: string;
   status: string;
   categoryId: number;
+  deadline: string | null;
   createdAt: string;
   updatedAt: string;
 }
