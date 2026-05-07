@@ -1,17 +1,19 @@
 import { useState } from "react";
-import type { Category } from "../types";
+import type { Category, SortKey } from "../types";
 
 interface Props {
   categories: Category[];
   showAllEnabled: boolean;
   onShowAllChange: (enabled: boolean) => void;
+  defaultSort: SortKey;
+  onDefaultSortChange: (sort: SortKey) => void;
   onAdd: (name: string) => Promise<void>;
   onUpdate: (id: number, name: string) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onClose: () => void;
 }
 
-export function CategoryDialog({ categories, showAllEnabled, onShowAllChange, onAdd, onUpdate, onDelete, onClose }: Props) {
+export function CategoryDialog({ categories, showAllEnabled, onShowAllChange, defaultSort, onDefaultSortChange, onAdd, onUpdate, onDelete, onClose }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [newName, setNewName] = useState("");
@@ -116,6 +118,17 @@ export function CategoryDialog({ categories, showAllEnabled, onShowAllChange, on
               onChange={(e) => onShowAllChange(e.target.checked)}
             />
             全件表示を許可する
+          </label>
+          <label className="dialog-option-label">
+            並び順の初期値
+            <select
+              className="sort-select-sm"
+              value={defaultSort}
+              onChange={(e) => onDefaultSortChange(e.target.value as SortKey)}
+            >
+              <option value="registDate">登録日順</option>
+              <option value="deadline">期限順</option>
+            </select>
           </label>
         </div>
         <div className="dialog-footer">

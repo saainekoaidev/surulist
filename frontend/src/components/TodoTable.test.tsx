@@ -13,6 +13,8 @@ const defaultProps = {
   todos,
   isAllMode: false,
   isAdding: false,
+  sortKey: "registDate" as const,
+  onSortChange: vi.fn(),
   onAdd: vi.fn(),
   onCancelAdd: vi.fn(),
   onUpdate: vi.fn(),
@@ -63,9 +65,9 @@ describe("TodoTable", () => {
 
   it("calls onUpdate on status change", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
-    render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
-    const selects = screen.getAllByRole("combobox");
-    await userEvent.selectOptions(selects[0], "In Progress");
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const statusSelect = container.querySelector<HTMLSelectElement>(".status-select")!;
+    await userEvent.selectOptions(statusSelect, "In Progress");
     expect(onUpdate).toHaveBeenCalledWith(1, { status: "In Progress" });
   });
 
@@ -481,5 +483,54 @@ describe("TodoTable - date/time auto-format and validation (US-016)", () => {
 
     expect(dateInput.value).toBe("2026/05/07");
     expect(onUpdate).toHaveBeenCalledWith(1, { deadline: "2026-05-07T00:00" });
+  });
+});
+
+describe("TodoTable - sort feature (US-019)", () => {
+  it("renders sort select in section-bar", () => {
+    render(<TodoTable {...defaultProps} />);
+    const sortSelect = screen.getByDisplayValue("登録日順");
+    expect(sortSelect).toBeInTheDocument();
+  });
+
+  it("calls onSortChange when sort is changed", async () => {
+    const onSortChange = vi.fn();
+    render(<TodoTable {...defaultProps} onSortChange={onSortChange} />);
+    const sortSelect = screen.getByDisplayValue("登録日順");
+    await userEvent.selectOptions(sortSelect, "deadline");
+    expect(onSortChange).toHaveBeenCalledWith("deadline");
+  });
+
+  it("sorts by registDate ASC (default)", () => {
+    const unsortedTodos: Todo[] = [
+      { id: 2, text: "後から追加", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-03T00:00:00Z", updatedAt: "2026-05-03T00:00:00Z" },
+      { id: 1, text: "最初に追加", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={unsortedTodos} sortKey="registDate" />);
+    const todoTexts = Array.from(container.querySelectorAll(".todo-text-clickable")).map(el => el.textContent);
+    expect(todoTexts).toEqual(["最初に追加", "後から追加"]);
+  });
+
+  it("sorts by deadline DESC with null at end", () => {
+    const sortTodos: Todo[] = [
+      { id: 1, text: "期限なし", status: "Not Started", categoryId: 1, deadline: null, createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+      { id: 2, text: "早い期限", status: "Not Started", categoryId: 1, deadline: "2026-06-01T00:00:00Z", createdAt: "2026-05-02T00:00:00Z", updatedAt: "2026-05-02T00:00:00Z" },
+      { id: 3, text: "遅い期限", status: "Not Started", categoryId: 1, deadline: "2026-07-01T00:00:00Z", createdAt: "2026-05-03T00:00:00Z", updatedAt: "2026-05-03T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={sortTodos} sortKey="deadline" />);
+    const todoTexts = Array.from(container.querySelectorAll(".todo-text-clickable")).map(el => el.textContent);
+    expect(todoTexts).toEqual(["遅い期限", "早い期限", "期限なし"]);
+  });
+
+  it("uses id as tiebreaker for deadline sort", () => {
+    const sameDeadlineTodos: Todo[] = [
+      { id: 1, text: "ID1", status: "Not Started", categoryId: 1, deadline: "2026-06-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+      { id: 3, text: "ID3", status: "Not Started", categoryId: 1, deadline: "2026-06-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+      { id: 2, text: "ID2", status: "Not Started", categoryId: 1, deadline: "2026-06-01T00:00:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={sameDeadlineTodos} sortKey="deadline" />);
+    const todoTexts = Array.from(container.querySelectorAll(".todo-text-clickable")).map(el => el.textContent);
+    // deadline DESC, id DESC → ID3, ID2, ID1
+    expect(todoTexts).toEqual(["ID3", "ID2", "ID1"]);
   });
 });
