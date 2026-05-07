@@ -49,8 +49,6 @@ describe("TodoTable", () => {
     render(<TodoTable {...defaultProps} />);
     await userEvent.click(screen.getByText("タスクA"));
     expect(screen.getByDisplayValue("タスクA")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "更新" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
   });
 
   it("calls onUpdate when edit is committed", async () => {
@@ -71,13 +69,19 @@ describe("TodoTable", () => {
     expect(onUpdate).toHaveBeenCalledWith(1, { status: "In Progress" });
   });
 
-  it("calls onDelete with confirmation", async () => {
+  it("shows × delete button always (not just in edit mode)", () => {
+    render(<TodoTable {...defaultProps} />);
+    const deleteButtons = screen.getAllByTitle("削除");
+    expect(deleteButtons).toHaveLength(2); // One per todo row
+  });
+
+  it("calls onDelete with confirmation via × button", async () => {
     const onDelete = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<TodoTable {...defaultProps} onDelete={onDelete} />);
 
-    await userEvent.click(screen.getByText("タスクA"));
-    await userEvent.click(screen.getByRole("button", { name: "削除" }));
+    const deleteButtons = screen.getAllByTitle("削除");
+    await userEvent.click(deleteButtons[0]);
 
     expect(window.confirm).toHaveBeenCalled();
     expect(onDelete).toHaveBeenCalledWith(1);
@@ -88,10 +92,37 @@ describe("TodoTable", () => {
     vi.spyOn(window, "confirm").mockReturnValue(false);
     render(<TodoTable {...defaultProps} onDelete={onDelete} />);
 
-    await userEvent.click(screen.getByText("タスクA"));
-    await userEvent.click(screen.getByRole("button", { name: "削除" }));
+    const deleteButtons = screen.getAllByTitle("削除");
+    await userEvent.click(deleteButtons[0]);
 
     expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("commits edit on blur (no update button)", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    await userEvent.click(screen.getByText("タスクA"));
+    const input = screen.getByDisplayValue("タスクA");
+    await userEvent.clear(input);
+    await userEvent.type(input, "blur確定");
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.blur(input);
+
+    expect(onUpdate).toHaveBeenCalledWith(1, { text: "blur確定" });
+  });
+
+  it("cancels edit on Escape", async () => {
+    render(<TodoTable {...defaultProps} />);
+    await userEvent.click(screen.getByText("タスクA"));
+    const input = screen.getByDisplayValue("タスクA");
+    await userEvent.clear(input);
+    await userEvent.type(input, "変更中");
+    await userEvent.keyboard("{Escape}");
+
+    // Should revert to text display
+    expect(screen.getByText("タスクA")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("変更中")).not.toBeInTheDocument();
   });
 });
 
@@ -291,6 +322,55 @@ describe("TodoTable - all mode grouping (US-007)", () => {
   });
 });
 
+describe("TodoTable - DATE/TIME interdependence (US-017)", () => {
+  it("disables TIME input when DATE is empty", () => {
+    const { container } = render(<TodoTable {...defaultProps} />);
+    const timeInputs = container.querySelectorAll<HTMLInputElement>('.col-time-input input');
+    // First todo has no deadline → TIME should be disabled
+    expect(timeInputs[0].disabled).toBe(true);
+  });
+
+  it("enables TIME input when DATE has a value", () => {
+    const todosWithDeadline: Todo[] = [
+      { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T14:30:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={todosWithDeadline} />);
+    const timeInput = container.querySelector<HTMLInputElement>('.col-time-input input')!;
+    expect(timeInput.disabled).toBe(false);
+  });
+
+  it("shows 00:00 for TIME when DATE is set but TIME is empty on commit", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { container } = render(<TodoTable {...defaultProps} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "2026/07/01" } });
+    fireEvent.blur(dateInput);
+
+    // TIME should show "00:00" after commit
+    const timeInput = container.querySelector<HTMLInputElement>('.col-time-input input')!;
+    expect(timeInput.value).toBe("00:00");
+  });
+
+  it("cancels DATE input on Escape (reverts to server value)", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const todosWithDeadline: Todo[] = [
+      { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T14:30:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
+    ];
+    const { container } = render(<TodoTable {...defaultProps} todos={todosWithDeadline} onUpdate={onUpdate} />);
+    const dateInput = container.querySelector<HTMLInputElement>('.col-date-input input')!;
+
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.change(dateInput, { target: { value: "2099/12/31" } });
+    fireEvent.keyDown(dateInput, { key: "Escape" });
+    fireEvent.blur(dateInput);
+
+    // Should revert and NOT call onUpdate
+    expect(onUpdate).not.toHaveBeenCalled();
+  });
+});
+
 describe("TodoTable - date/time auto-format and validation (US-016)", () => {
   it("auto-formats yyyymmdd to yyyy/mm/dd on blur", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
@@ -361,7 +441,7 @@ describe("TodoTable - date/time auto-format and validation (US-016)", () => {
     expect(onUpdate).not.toHaveBeenCalled();
   });
 
-  it("clears invalid time (hour > 23) on blur", async () => {
+  it("clears invalid time (hour > 23) on blur, shows 00:00 when date exists (US-017)", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const todosWithDeadline: Todo[] = [
       { id: 1, text: "タスク", status: "Not Started", categoryId: 1, deadline: "2026-05-07T14:30:00Z", createdAt: "2026-05-01T00:00:00Z", updatedAt: "2026-05-01T00:00:00Z" },
@@ -373,7 +453,8 @@ describe("TodoTable - date/time auto-format and validation (US-016)", () => {
     fireEvent.change(timeInput, { target: { value: "2500" } });
     fireEvent.blur(timeInput);
 
-    expect(timeInput.value).toBe("");
+    // Invalid time is cleared, but DATE exists so TIME shows "00:00" (US-017)
+    expect(timeInput.value).toBe("00:00");
   });
 
   it("accepts yyyy-mm-dd format and converts to yyyy/mm/dd", async () => {

@@ -265,7 +265,7 @@ tbody tr:hover { background: var(--color-row-hover); }
 .col-date-input { width: 120px; font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
 .col-time-input { width: 80px; font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
 .col-date     { width: 95px; font-size: 11px; color: var(--color-text-muted); white-space: nowrap; }
-.col-actions  { width: 110px; white-space: nowrap; text-align: right; }
+.col-actions  { width: 36px; white-space: nowrap; text-align: center; }
 
 /* Date/Time ヘッダも 12px 階層に合わせる */
 thead th.col-date-input { font-size: 10px; }
@@ -360,6 +360,11 @@ thead th.col-date { font-size: 10px; }
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(30,64,175,.15);
+}
+.deadline-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--color-table-stripe);
 }
 
 /* ============================================================
