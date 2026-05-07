@@ -30,6 +30,9 @@
   --color-badge-bg:      #bfdbfe;
   --color-badge-text:    #1e3a8a;
 
+  --color-overdue-bg:    #fef2f2;
+  --color-overdue-text:  #dc2626;
+
   --color-overlay:       rgba(15, 23, 42, 0.5);
 
   --status-not-started-bg:   #e2e8f0;
@@ -68,7 +71,7 @@ body {
    Layout
    ============================================================ */
 .app {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 16px 48px;
 }
@@ -291,6 +294,9 @@ thead th.col-date { font-size: 10px; }
 .row-new { background: var(--color-primary-bg) !important; }
 
 .row-editing { background: var(--color-editing-bg) !important; }
+
+.row-overdue { background: var(--color-overdue-bg) !important; }
+.overdue-mark { color: var(--color-overdue-text); font-weight: 700; }
 
 .todo-input {
   width: 100%;
