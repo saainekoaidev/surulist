@@ -45,6 +45,11 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter frontend exec playwright install --with-deps chromium
 
+      - name: Create test database
+        run: pnpm --filter backend exec prisma migrate deploy
+        env:
+          DATABASE_URL: "file:./test.db"
+
       - name: E2E tests
         run: pnpm --filter frontend test:e2e
         env:
