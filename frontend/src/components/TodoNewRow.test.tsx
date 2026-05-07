@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TodoNewRow } from "./TodoNewRow";
 
@@ -22,19 +22,20 @@ describe("TodoNewRow", () => {
     expect(onSubmit).toHaveBeenCalledWith("新しいタスク");
   });
 
-  it("calls onSubmit with text on button click", async () => {
+  it("calls onSubmit with text on blur", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     renderInTable(<TodoNewRow onSubmit={onSubmit} onCancel={vi.fn()} />);
     const input = screen.getByPlaceholderText(/Todoを入力/);
-    await userEvent.type(input, "ボタンで登録");
-    await userEvent.click(screen.getByRole("button", { name: "登録" }));
-    expect(onSubmit).toHaveBeenCalledWith("ボタンで登録");
+    await userEvent.type(input, "blurで登録");
+    fireEvent.blur(input);
+    expect(onSubmit).toHaveBeenCalledWith("blurで登録");
   });
 
-  it("does not submit empty text", async () => {
+  it("does not submit empty text on blur", () => {
     const onSubmit = vi.fn();
     renderInTable(<TodoNewRow onSubmit={onSubmit} onCancel={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: "登録" }));
+    const input = screen.getByPlaceholderText(/Todoを入力/);
+    fireEvent.blur(input);
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -52,5 +53,22 @@ describe("TodoNewRow", () => {
     const input = screen.getByPlaceholderText(/Todoを入力/);
     await userEvent.type(input, "{Escape}");
     expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("does not call onSubmit after Escape (cancelledRef prevents blur commit)", async () => {
+    const onSubmit = vi.fn();
+    const onCancel = vi.fn();
+    renderInTable(<TodoNewRow onSubmit={onSubmit} onCancel={onCancel} />);
+    const input = screen.getByPlaceholderText(/Todoを入力/);
+    await userEvent.type(input, "テスト");
+    await userEvent.type(input, "{Escape}");
+    // blur fires after Escape but should not trigger submit
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("does not render a register button", () => {
+    renderInTable(<TodoNewRow onSubmit={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "登録" })).not.toBeInTheDocument();
   });
 });

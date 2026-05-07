@@ -3,6 +3,7 @@
 > 各 User Story (US) は `US-NNN	<本文>` (タブ区切り) の 1 行で記述する。新しい US は冒頭に追記して逆時系列順に並べる。
 > 1 US 1 Issue 1 PR を原則とする (詳細は `CLAUDE.md` の per-US merge ceremony を参照)。
 
+US-020	新規追加行の登録ボタンを廃止し, Enter/blur/Tabで確定・Escapeでキャンセルに統一する。US-018で確立した編集フローと同じ操作体系を新規追加行にも適用する。
 US-019	Todo一覧にソート機能を追加する。セクションバー内のリストボックスで「登録日順(RegistDate&#昇順)」と「期限順(Deadline&#降順)」を切り替える。目的編集ダイアログのオプションにソートの初期値リストボックスを追加し, localStorageで保持する。
 US-018	編集フローを統一する。Todoテキストの更新ボタンを廃止し, Enter/blur/Tabで確定・Escapeでキャンセルに統一する (Date/Timeと同じ操作体系)。Date/TimeにもEscapeキャンセルを追加する。削除ボタンは×アイコンに変更し, 編集状態によらず常時表示する。
 US-017	Date/Time入力の連動制御を追加する。DATEが空欄の場合はTIME入力をdisabledにする。DATEに値がありTIMEが空の場合, commit時にTIMEを「00:00」と表示する。サーバ応答後のローカル表示をuseEffectで同期する。

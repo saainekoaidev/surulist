@@ -124,13 +124,13 @@ test.describe("Todo CRUD (US-004, US-005, US-006)", () => {
     await cleanupAll(page);
   });
 
-  test("can add a new todo via button", async ({ page }) => {
+  test("can add a new todo via blur", async ({ page }) => {
     await page.getByRole("button", { name: "+ 新規追加" }).click();
 
     const input = page.locator(".todo-input");
     await expect(input).toBeVisible();
     await input.fill("新しいタスク");
-    await page.getByRole("button", { name: "登録" }).click();
+    await input.blur();
 
     await expect(page.getByText("新しいタスク")).toBeVisible();
     await expect(page.getByText("1件")).toBeVisible();
